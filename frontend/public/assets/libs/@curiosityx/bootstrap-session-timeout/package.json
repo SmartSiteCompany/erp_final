@@ -1,0 +1,7 @@
+{
+  "name": "@curiosityx/bootstrap-session-timeout",
+  "version": "1.0.0",
+  "dependencies": {
+    "@curiosityx/bootstrap-session-timeout": "file:"
+  }
+}
