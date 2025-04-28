@@ -1,0 +1,123 @@
+
+export const Usuarios = [
+    {
+        'id': '1',
+        'username':'Edgar', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '2',
+        'username':'Gibran', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '3',
+        'username':'Maria', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '4',
+        'username':'Nancy', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '5',
+        'username':'Aracely', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '6',
+        'username':'Itari', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '7',
+        'username':'Raquel', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '8',
+        'username':'Erick', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '9',
+        'username':'Emmanuel', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '10',
+        'username':'David', 
+        'area':'smart-site', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '11',
+        'username':'Edgar', 
+        'area':'DataX', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '12',
+        'username':'Gibran', 
+        'area':'DataX', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '13',
+        'username':'Maria', 
+        'area':'DataX', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '14',
+        'username':'Nancy', 
+        'area':'DataX', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '15',
+        'username':'Aracely', 
+        'area':'DataX', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '16',
+        'username':'Itari', 
+        'area':'StudioDesign', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '17',
+        'username':'Raquel', 
+        'area':'GeneralSystech', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '18',
+        'username':'Erick', 
+        'area':'GeneralSystech', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '19',
+        'username':'Emmanuel', 
+        'area':'GeneralSystech', 
+        'email':'correo@gmail.com',
+    },
+    {
+        'id': '20',
+        'username':'David', 
+        'area':'StudioDesign', 
+        'email':'correo@gmail.com',
+    },
+]
