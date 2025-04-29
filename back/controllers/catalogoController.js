@@ -65,23 +65,33 @@ exports.cargarCatalogo = async (req, res) => {
       }
     });
 
-    const productos = result.Worksheet // Nombre de  Excel
-      .filter(item => item.codigo) // Filtrar filas vacías
-      .map(item => ({
-        ...item,
-        estatus: item.estatus || 'Activo' // Valor por defecto
-      }));
+    const productos = result.Worksheet
+    .filter(item => item.codigo)
+    .map(item => ({
+      ...item,
+      estatus: item.estatus || 'Activo'
+    }));
 
-    await Catalogo.deleteMany({});
-    await Catalogo.insertMany(productos);
+  // Usar bulkWrite para manejar inserciones y actualizaciones
+  const bulkOps = productos.map(producto => ({
+    updateOne: {
+      filter: { codigo: producto.codigo },
+      update: { $set: producto },
+      upsert: true
+    }
+  }));
+  await Catalogo.bulkWrite(bulkOps);
 
-    res.json({ 
-      success: true, 
-      count: productos.length 
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  res.json({ 
+    success: true, 
+    count: productos.length 
+  });
+} catch (error) {
+  res.status(500).json({ 
+    error: error.message,
+    details: error.keyValue
+  });
+}
 };
 
 // Búsquedas especializadas

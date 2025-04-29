@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const productoSchema = new mongoose.Schema({
-  codigo: { type: String, required: true, unique: true }, // Columna B "Codigo Smart"
+  codigo: { type: String, required: true,}, // unique: true }, // Columna B "Codigo Smart"
   nombre: { type: String, required: true }, // Columna C "Descripción"
   codigoTienda: { type: String }, // Columna D
   categoria: { type: String, required: true }, // Columna E
