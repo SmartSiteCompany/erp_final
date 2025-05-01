@@ -14,11 +14,10 @@ router.post(
 
 router.get('/', catalogoController.obtenerCatalogo);
 
-router.get(
-  '/:codigo',
-  catalogoController.verificarProducto,
-  catalogoController.buscarPorCodigo
-);
+// Después (solución):
+router.get('/:id', catalogoController.buscarPorId); //
+
+//router.get('/codigo/:codigo', catalogoController.verificarProducto, catalogoController.buscarPorCodigo); // /catalogos/codigo/COD123
 
 router.put(
   '/:codigo',
