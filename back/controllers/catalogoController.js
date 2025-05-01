@@ -104,6 +104,23 @@ exports.buscarPorCodigo = async (req, res) => {
   }
 };
 
+// Búsqueda por ID
+exports.buscarPorId = async (req, res) => {
+  try {
+    const producto = await Catalogo.findById(req.params.id);
+    if (!producto) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    res.json(producto);
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Error al buscar producto',
+      details: error.message 
+    });
+  }
+};
+
+//Obtener por categoria
 exports.obtenerPorCategoria = async (req, res) => {
   try {
     const productos = await Catalogo.find({ 
