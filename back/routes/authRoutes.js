@@ -189,6 +189,6 @@ router.post('/restablecer-contraseña', authController.restablecerContraseña);
  *       401:
  *         description: No autorizado (token inválido/missing)
  */
-router.get('/perfil', authMiddleware.verificarToken, userController.obtenerUsuarioPorId);
+router.get('/perfil', authMiddleware.verificarToken, userController.obtenerPerfil);
 
 module.exports = router;

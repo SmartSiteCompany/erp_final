@@ -34,18 +34,34 @@ const obtenerUsuarioPorId = async (req, res) => {
   }
 };
 
-// Actualizar un usuario
-const actualizarUsuario = async (req, res) => {
+// Nuevo método para obtener perfil del usuario autenticado
+const obtenerPerfil = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const user = await User.findById(req.userId).select('-password -remember_token');
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
     res.json(user);
   } catch (error) {
+    console.error('Error en obtenerPerfil:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Actualizar un usuario
+const actualizarUsuario = async (req, res) => {
+  try {
+    // Optional: Add validation or sanitization here if needed
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    }).select('-password -remember_token');
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error en actualizarUsuario:', error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -67,6 +83,7 @@ module.exports = {
   obtenerUsuarios,
   crearUsuario,
   obtenerUsuarioPorId,
+  obtenerPerfil,
   actualizarUsuario,
   eliminarUsuario,
 };
