@@ -104,37 +104,71 @@ exports.crearCotizacion = async (req, res) => {
   session.startTransaction();
 
   try {
+    // 1. Validar usuario autenticado
+    if (!req.user || !req.user._id) {
+      throw new Error('Debes estar autenticado para crear cotizaciones');
+    }
+
     const { detalles, porcentajes, forma_pago, ...datosCotizacion } = req.body;
 
-    // Validación básica
+    // 2. Validar datos básicos
     if (!detalles || detalles.length === 0) {
       throw new Error('Debe incluir al menos un ítem');
     }
 
-    // Procesar detalles
+    // 3. Validar relaciones (cliente, vendedor, filial)
+    if (!datosCotizacion.cliente_id || !datosCotizacion.vendedor_id || !datosCotizacion.filial_id) {
+      throw new Error('Debe especificar cliente, vendedor y filial');
+    }
+
+    const [cliente, vendedor, filial] = await Promise.all([
+      Cliente.findById(datosCotizacion.cliente_id).session(session),
+      User.findById(datosCotizacion.vendedor_id).session(session),
+      Filial.findById(datosCotizacion.filial_id).session(session)
+    ]);
+
+    if (!cliente) throw new Error('Cliente no encontrado');
+    if (!vendedor) throw new Error('Vendedor no encontrado');
+    if (!filial) throw new Error('Filial no encontrada');
+
+    // 4. Procesar detalles de la cotización
     const detallesProcesados = await Promise.all(
       detalles.map(async (detalle) => {
+        // Validar item básico
+        if (!detalle.tipo) throw new Error('Tipo de ítem no especificado');
+        if (!detalle.cantidad || detalle.cantidad <= 0) throw new Error('Cantidad inválida');
+
         if (detalle.tipo === 'ManoObra') {
+          // Validar mano de obra
+          if (!detalle.horas || detalle.horas <= 0) throw new Error('Horas inválidas para mano de obra');
+          if (!detalle.tarifa_hora || detalle.tarifa_hora <= 0) throw new Error('Tarifa inválida para mano de obra');
+          
           return {
             ...detalle,
             precio_venta: detalle.horas * detalle.tarifa_hora
           };
         } else {
-          const producto = await Catalogo.findById(detalle.producto_id);
+          // Validar producto/servicio
+          if (!detalle.producto_id) throw new Error('Producto/Servicio no especificado');
+          
+          const producto = await Catalogo.findById(detalle.producto_id).session(session);
+          if (!producto) throw new Error('Producto/Servicio no encontrado');
+          
           return {
             ...detalle,
-            precio_venta: producto.precio * detalle.cantidad
+            precio_venta: (producto.precio || 0) * detalle.cantidad,
+            costo_materiales: producto.costo || 0
           };
         }
       })
     );
 
-    // Calcular totales
-    const subtotal = detallesProcesados.reduce((sum, item) => sum + item.precio_venta, 0);
-    const iva = subtotal * (porcentajes?.iva || 0) / 100;
+    // 5. Calcular totales
+    const subtotal = detallesProcesados.reduce((sum, item) => sum + (item.precio_venta || 0), 0);
+    const iva = subtotal * ((porcentajes?.iva || 0) / 100);
     const total = subtotal + iva;
 
-    // Crear cotización
+    // 6. Crear cotización
     const cotizacion = new Cotizacion({
       ...datosCotizacion,
       detalles: detallesProcesados,
@@ -147,18 +181,23 @@ exports.crearCotizacion = async (req, res) => {
       iva,
       precio_venta: total,
       forma_pago,
-      creado_por: req.user._id
+      creado_por: req.user._id,
+      estado: datosCotizacion.estado || 'Borrador',
+      estado_servicio: datosCotizacion.estado_servicio || 'Pendiente'
     });
 
+    // 7. Guardar cotización
     await cotizacion.save({ session });
 
-    // Manejo de pagos según tipo
+    // 8. Manejar pagos según tipo
     if (forma_pago === 'Contado') {
       const pago = new Pago({
         monto: total,
-        metodo_pago: 'Efectivo',
+        metodo_pago: datosCotizacion.metodo_pago || 'Efectivo',
         cotizacion_id: cotizacion._id,
-        cliente_id: cotizacion.cliente_id
+        cliente_id: cotizacion.cliente_id,
+        estado: 'Completado',
+        fecha_pago: new Date()
       });
 
       await pago.save({ session });
@@ -166,15 +205,34 @@ exports.crearCotizacion = async (req, res) => {
       await cotizacion.save({ session });
     }
 
+    // 9. Confirmar transacción
     await session.commitTransaction();
 
+    // 10. Retornar respuesta exitosa
     res.status(201).json({
       success: true,
-      data: cotizacion
+      data: await Cotizacion.findById(cotizacion._id)
+        .populate('cliente_id', 'nombre email')
+        .populate('vendedor_id', 'name email')
+        .populate('filial_id', 'nombre_filial')
+        .populate('detalles.producto_id', 'nombre precio')
     });
+
   } catch (error) {
+    // Manejo de errores
     await session.abortTransaction();
-    handleError(res, error, 400);
+    
+    console.error('Error al crear cotización:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body
+    });
+
+    res.status(400).json({
+      success: false,
+      error: error.message || 'Error al crear la cotización',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   } finally {
     session.endSession();
   }
