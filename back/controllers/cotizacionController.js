@@ -10,7 +10,7 @@ const PDFDocument = require('pdfkit');
 const { format } = require('date-fns');
 
 // ==============================================
-// 1. Helpers y Middlewares
+// Helpers y Middlewares
 // ==============================================
 
 const handleError = (res, error, statusCode = 500) => {
@@ -42,7 +42,7 @@ exports.verificarCotizacion = async (req, res, next) => {
 };
 
 // ==============================================
-// 2. Operaciones CRUD Básicas
+// Operaciones CRUD Básicas
 // ==============================================
 
 exports.obtenerCotizaciones = async (req, res) => {
@@ -104,19 +104,23 @@ exports.crearCotizacion = async (req, res) => {
   session.startTransaction();
 
   try {
-    // 1. Validar usuario autenticado
-    if (!req.user || !req.user._id) {
-      throw new Error('Debes estar autenticado para crear cotizaciones');
-    }
+    //  Validar usuario autenticado
+// El usuario autenticado viene del middleware
+    const usuarioId = req.userId;
+    
+    const nuevaCotizacion = await Cotizacion.create({
+      ...req.body,
+      usuario: usuarioId // usuario automatico
+    });
 
     const { detalles, porcentajes, forma_pago, ...datosCotizacion } = req.body;
 
-    // 2. Validar datos básicos
+    // Validar datos básicos
     if (!detalles || detalles.length === 0) {
       throw new Error('Debe incluir al menos un ítem');
     }
 
-    // 3. Validar relaciones (cliente, vendedor, filial)
+    // Validar relaciones (cliente, vendedor, filial)
     if (!datosCotizacion.cliente_id || !datosCotizacion.vendedor_id || !datosCotizacion.filial_id) {
       throw new Error('Debe especificar cliente, vendedor y filial');
     }
@@ -131,7 +135,7 @@ exports.crearCotizacion = async (req, res) => {
     if (!vendedor) throw new Error('Vendedor no encontrado');
     if (!filial) throw new Error('Filial no encontrada');
 
-    // 4. Procesar detalles de la cotización
+    // Procesar detalles de la cotización
     const detallesProcesados = await Promise.all(
       detalles.map(async (detalle) => {
         // Validar item básico
@@ -163,12 +167,12 @@ exports.crearCotizacion = async (req, res) => {
       })
     );
 
-    // 5. Calcular totales
+    // Calcular totales
     const subtotal = detallesProcesados.reduce((sum, item) => sum + (item.precio_venta || 0), 0);
     const iva = subtotal * ((porcentajes?.iva || 0) / 100);
     const total = subtotal + iva;
 
-    // 6. Crear cotización
+    // Crear cotización
     const cotizacion = new Cotizacion({
       ...datosCotizacion,
       detalles: detallesProcesados,
@@ -186,10 +190,10 @@ exports.crearCotizacion = async (req, res) => {
       estado_servicio: datosCotizacion.estado_servicio || 'Pendiente'
     });
 
-    // 7. Guardar cotización
+    // Guardar cotización
     await cotizacion.save({ session });
 
-    // 8. Manejar pagos según tipo
+    // Manejar pagos según tipo
     if (forma_pago === 'Contado') {
       const pago = new Pago({
         monto: total,
@@ -205,10 +209,10 @@ exports.crearCotizacion = async (req, res) => {
       await cotizacion.save({ session });
     }
 
-    // 9. Confirmar transacción
+    // Confirmar transacción
     await session.commitTransaction();
 
-    // 10. Retornar respuesta exitosa
+    // Retornar respuesta exitosa
     res.status(201).json({
       success: true,
       data: await Cotizacion.findById(cotizacion._id)
@@ -350,7 +354,7 @@ exports.eliminarCotizacion = async (req, res) => {
 };
 
 // ==============================================
-// 3. Gestión de Porcentajes y Cálculos
+// Gestión de Porcentajes y Cálculos
 // ==============================================
 
 exports.actualizarPorcentajes = async (req, res) => {
@@ -425,7 +429,7 @@ exports.toggleCalculoAutomatico = async (req, res) => {
 };
 
 // ==============================================
-// 4. Gestión de Mano de Obra
+// Gestión de Mano de Obra
 // ==============================================
 
 exports.agregarManoObra = async (req, res) => {
@@ -577,7 +581,7 @@ exports.eliminarManoObra = async (req, res) => {
 };
 
 // ==============================================
-// 5. Operaciones de Estado
+// Operaciones de Estado
 // ==============================================
 
 exports.actualizarEstado = async (req, res) => {
@@ -667,7 +671,7 @@ exports.completarServicio = async (req, res) => {
 };
 
 // ==============================================
-// 6. Operaciones de Pagos
+// Operaciones de Pagos
 // ==============================================
 
 exports.registrarPago = async (req, res) => {
@@ -761,7 +765,7 @@ exports.obtenerHistorialPagos = async (req, res) => {
 };
 
 // ==============================================
-// 7. Operaciones de Catálogo (Excel)
+// Operaciones de Catálogo (Excel)
 // ==============================================
 
 exports.cargarCatalogo = async (req, res) => {
@@ -838,7 +842,7 @@ exports.obtenerCatalogo = async (req, res) => {
 };
 
 // ==============================================
-// 8. Reportes
+// Reportes
 // ==============================================
 
 exports.generarReportePDF = async (req, res) => {
@@ -982,7 +986,7 @@ exports.generarReporteExcel = async (req, res) => {
 };
 
 // ==============================================
-// 9. Funciones Auxiliares
+// Funciones Auxiliares
 // ==============================================
 
 async function generarPagosFinanciamiento(cotizacion, session) {
