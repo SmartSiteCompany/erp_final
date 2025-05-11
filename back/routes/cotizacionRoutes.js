@@ -13,7 +13,7 @@ const {
 } = require('../middlewares/cotizacionValidation');
 const authMiddleware = require("../middlewares/authMiddleware");
 
-router.use(authMiddleware.verificarToken);
+router.use(authMiddleware.verificarToken); // Verificacion del token
 // ==============================================
 // 1. Operaciones CRUD Básicas
 // ==============================================
