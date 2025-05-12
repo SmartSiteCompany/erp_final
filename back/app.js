@@ -59,7 +59,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Rutas protegidas
 app.use("/users", userRoutes);
 
-// Conexion a DB
+/*
+// Conexion a DB Nube
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
@@ -68,4 +69,12 @@ connectDB().then(() => {
 }).catch(err => {
   console.error('❌ Error al iniciar la aplicación:', err);
   process.exit(1);
+});*/
+
+
+//Conexión a MongoDB
+require("./config/db");
+mongoose.connect("mongodb://localhost:27017/SSC_intCRM", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });

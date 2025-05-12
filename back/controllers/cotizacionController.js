@@ -105,7 +105,6 @@ exports.crearCotizacion = async (req, res) => {
 
   try {
     //  Validar usuario autenticado
-// El usuario autenticado viene del middleware
     const usuarioId = req.userId;
     
     const nuevaCotizacion = await Cotizacion.create({
