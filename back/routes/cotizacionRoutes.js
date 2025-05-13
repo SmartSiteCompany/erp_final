@@ -17,6 +17,8 @@ router.use(authMiddleware.verificarToken); // Verificacion del token
 // ==============================================
 // 1. Operaciones CRUD Básicas
 // ==============================================
+router.use(verificarToken);
+
 router.get('/', 
   validateQueryParams,
   cotizacionController.obtenerCotizaciones

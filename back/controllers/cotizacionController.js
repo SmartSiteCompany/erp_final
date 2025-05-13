@@ -103,13 +103,28 @@ exports.crearCotizacion = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  try {
-    //  Validar usuario autenticado
-    const usuarioId = req.userId;
-    
+    try {
+    // Verificar que el usuario esté autenticado y obtener su ID del token
+    if (!req.userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'No autorizado. Token inválido o no proporcionado.'
+      });
+    }
+
+    // Validar que el token sea válido y corresponda a un usuario existente
+    const usuario = await User.findById(req.userId);
+    if (!usuario) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuario no encontrado. Token inválido.'
+      });
+    }
+
+    // El resto de tu lógica de creación de cotización...
     const nuevaCotizacion = await Cotizacion.create({
       ...req.body,
-      usuario: usuarioId // usuario automatico
+      usuario: req.userId // Asignar el usuario del token
     });
 
     const { detalles, porcentajes, forma_pago, ...datosCotizacion } = req.body;

@@ -1,24 +1,42 @@
 // authMiddleware.js
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const User = require('../models/User');
 
-exports.verificarToken = (req, res, next) => {
-  const authHeader = req.header('Authorization');
+const verificarToken = async (req, res, next) => {
+  // 1. Obtener el token del header
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Formato: Bearer <token>
 
-  if (!authHeader) {
-    return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
+  if (!token) {
+    return res.status(401).json({ 
+      success: false,
+      error: 'Token no proporcionado' 
+    });
   }
-
-  const token = authHeader.startsWith('Bearer ') 
-    ? authHeader.slice(7) 
-    : authHeader;
 
   try {
+    // 2. Verificar el token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
+    
+    // 3. Verificar que el usuario exista
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Usuario no encontrado' 
+      });
+    }
+
+    // 4. Adjuntar el usuario a la solicitud
+    req.userId = decoded.userId;
     next();
-  } catch (error) {
-    console.error('Error verificando token:', error);
-    res.status(401).json({ error: 'Token inválido o expirado' });
+  } catch (err) {
+    console.error('Error al verificar token:', err);
+    return res.status(401).json({ 
+      success: false,
+      error: 'Token inválido o expirado' 
+    });
   }
 };
+
+module.exports = verificarToken;

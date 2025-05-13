@@ -312,7 +312,7 @@ cotizacionSchema.index({ cliente_id: 1, estado: 1 });
 cotizacionSchema.index({ filial_id: 1, fecha_cotizacion: -1 });
 cotizacionSchema.index({ estado_servicio: 1, fecha_inicio_servicio: 1 });
 cotizacionSchema.index({ 'financiamiento.fecha_termino': 1 });
-//cotizacionSchema.index({ id_manual: 1 }, { unique: true });
+cotizacionSchema.index({ id_manual: 1 }, { unique: true });
 
 // ======================
 // Middlewares (Hooks)
