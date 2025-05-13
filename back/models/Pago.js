@@ -140,7 +140,7 @@ const pagoSchema = new mongoose.Schema({
 // ============ ÍNDICES ============
 pagoSchema.index({ cotizacion_id: 1, fecha_pago: -1 });
 pagoSchema.index({ cliente_id: 1, estado: 1 });
-pagoSchema.index({ referencia: 1 }, { unique: true });
+//pagoSchema.index({ referencia: 1 }, { unique: true });
 pagoSchema.index({ 'fecha_pago': 1, 'metodo_pago': 1 });
 
 // ============ MIDDLEWARES (HOOKS) ============

@@ -27,7 +27,7 @@ const catalogoRoutes = require('./routes/catalogoRoutes');
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+//const PORT = process.env.PORT || 8000;
 
 // Cors
 app.use(cors({ origin: 'http://localhost:3000' })); 
@@ -77,4 +77,9 @@ require("./config/db");
 mongoose.connect("mongodb://localhost:27017/SSC_intCRM", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+});
+
+const PORT = 8000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

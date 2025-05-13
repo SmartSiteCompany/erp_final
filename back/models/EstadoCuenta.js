@@ -182,7 +182,7 @@ const estadoCuentaSchema = new mongoose.Schema({
 
 // ============ ÍNDICES ============
 estadoCuentaSchema.index({ cliente_id: 1, estado: 1 });
-estadoCuentaSchema.index({ cotizacion_id: 1 }, { unique: true });
+//estadoCuentaSchema.index({ cotizacion_id: 1 }, { unique: true });
 estadoCuentaSchema.index({ fecha_vencimiento: 1 });
 estadoCuentaSchema.index({ 'estado': 1, 'fecha_vencimiento': 1 });
 
