@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const cotizacionController = require('../controllers/cotizacionController');
 const upload = require('../middlewares/uploadExcel');
+const { verificarToken } = require('../middlewares/authMiddleware');
 const {
   validateCreateCotizacion,
   validateUpdateCotizacion,
@@ -11,11 +12,10 @@ const {
   validateQueryParams,
   validatePagos
 } = require('../middlewares/cotizacionValidation');
-const authMiddleware = require("../middlewares/authMiddleware");
 
-router.use(authMiddleware.verificarToken); // Verificacion del token
+
 // ==============================================
-// 1. Operaciones CRUD Básicas
+// Operaciones CRUD Básicas
 // ==============================================
 router.use(verificarToken);
 
