@@ -17,7 +17,6 @@ const {
 // ==============================================
 // Operaciones CRUD Básicas
 // ==============================================
-router.use(verificarToken);
 
 router.get('/', 
   validateQueryParams,

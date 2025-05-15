@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Cotizacion = require('../models/Cotizacion');
 const Catalogo = require('../models/Catalogo');
+const User = require('../models/User')
 const EstadoCuenta = require('../models/EstadoCuenta');
 const Pago = require('../models/Pago');
 const { configFinanciera, estadosCotizacion, formasPago } = require('../utils/constantes');
@@ -104,7 +105,7 @@ exports.crearCotizacion = async (req, res) => {
   session.startTransaction();
 
     try {
-    // Verificar que el usuario esté autenticado y obtener su ID del token
+     // Verificar autenticación (descomenta y adapta)
     if (!req.userId) {
       return res.status(401).json({
         success: false,
@@ -112,22 +113,16 @@ exports.crearCotizacion = async (req, res) => {
       });
     }
 
-    // Validar que el token sea válido y corresponda a un usuario existente
-    const usuario = await User.findById(req.userId);
-    if (!usuario) {
+    const usuarioCreador = await User.findById(req.userId).session(session);
+    if (!usuarioCreador) {
       return res.status(401).json({
         success: false,
         error: 'Usuario no encontrado. Token inválido.'
       });
     }
 
-    // El resto de tu lógica de creación de cotización...
-    const nuevaCotizacion = await Cotizacion.create({
-      ...req.body,
-      usuario: req.userId // Asignar el usuario del token
-    });
-
     const { detalles, porcentajes, forma_pago, ...datosCotizacion } = req.body;
+    const vendedor_id = datosCotizacion.vendedor_id || req.userId;
 
     // Validar datos básicos
     if (!detalles || detalles.length === 0) {
@@ -199,7 +194,7 @@ exports.crearCotizacion = async (req, res) => {
       iva,
       precio_venta: total,
       forma_pago,
-      creado_por: req.user._id,
+      creado_por: usuarioCreador._id,
       estado: datosCotizacion.estado || 'Borrador',
       estado_servicio: datosCotizacion.estado_servicio || 'Pendiente'
     });
