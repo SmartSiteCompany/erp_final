@@ -6,10 +6,9 @@ let supportsTransactions = false;
 const connectDB = async () => {
   try {
     const connection = await mongoose.connect(process.env.MONGODB_URI, {
-      // useNewUrlParser and useUnifiedTopology are default in mongoose 6+
+     
     });
 
-    // Check if the topology supports transactions
     const topology = connection.connection.client.topology;
     if (topology && (topology.description.type === 'ReplicaSetWithPrimary' || topology.description.type === 'Sharded')) {
       supportsTransactions = true;
