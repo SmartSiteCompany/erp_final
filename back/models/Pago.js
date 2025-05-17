@@ -112,14 +112,14 @@ const pagoSchema = new mongoose.Schema({
   // ============ METADATA ============
   registrado_por: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'User',
     required: true,
     description: "Usuario que registró el pago"
   },
 
   autorizado_por: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'User',
     description: "Usuario que autorizó el pago (si aplica)"
   }
 

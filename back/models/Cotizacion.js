@@ -73,7 +73,7 @@ const cotizacionSchema = new mongoose.Schema({
 
   vendedor_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'User',
     required: [true, 'El vendedor es requerido']
   },
 
@@ -284,13 +284,13 @@ const cotizacionSchema = new mongoose.Schema({
   // ======================
   creado_por: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'User',
     required: true
   },
 
   actualizado_por: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario'
+    ref: 'User'
   }
 
 }, {

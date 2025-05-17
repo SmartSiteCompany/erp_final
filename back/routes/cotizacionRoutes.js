@@ -29,6 +29,7 @@ router.get('/:id',
 );
 
 router.post('/',
+  verificarToken,
   validateCreateCotizacion,
   cotizacionController.crearCotizacion
 );

@@ -1,14 +1,18 @@
 const mongoose = require('mongoose');
 const Cotizacion = require('../models/Cotizacion');
 const Catalogo = require('../models/Catalogo');
-const User = require('../models/User')
+const User = require('../models/User');
 const EstadoCuenta = require('../models/EstadoCuenta');
 const Pago = require('../models/Pago');
+const Cliente = require('../models/Cliente');
+const Filial = require('../models/Filial');
 const { configFinanciera, estadosCotizacion, formasPago } = require('../utils/constantes');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { format } = require('date-fns');
+
+const { getSupportsTransactions } = require('../config/db');
 
 // ==============================================
 // Helpers y Middlewares
@@ -101,11 +105,15 @@ exports.obtenerCotizacionPorId = async (req, res) => {
 };
 
 exports.crearCotizacion = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const useTransactions = getSupportsTransactions();
+  let session = null;
+  if (useTransactions) {
+    session = await mongoose.startSession();
+    session.startTransaction();
+  }
 
-    try {
-     // Verificar autenticación (descomenta y adapta)
+  try {
+    // Verificar autenticación (descomenta y adapta)
     if (!req.userId) {
       return res.status(401).json({
         success: false,
@@ -113,7 +121,9 @@ exports.crearCotizacion = async (req, res) => {
       });
     }
 
-    const usuarioCreador = await User.findById(req.userId).session(session);
+    const usuarioCreador = useTransactions
+      ? await User.findById(req.userId).session(session)
+      : await User.findById(req.userId);
     if (!usuarioCreador) {
       return res.status(401).json({
         success: false,
@@ -135,9 +145,15 @@ exports.crearCotizacion = async (req, res) => {
     }
 
     const [cliente, vendedor, filial] = await Promise.all([
-      Cliente.findById(datosCotizacion.cliente_id).session(session),
-      User.findById(datosCotizacion.vendedor_id).session(session),
-      Filial.findById(datosCotizacion.filial_id).session(session)
+      useTransactions
+        ? Cliente.findById(datosCotizacion.cliente_id).session(session)
+        : Cliente.findById(datosCotizacion.cliente_id),
+      useTransactions
+        ? User.findById(datosCotizacion.vendedor_id).session(session)
+        : User.findById(datosCotizacion.vendedor_id),
+      useTransactions
+        ? Filial.findById(datosCotizacion.filial_id).session(session)
+        : Filial.findById(datosCotizacion.filial_id)
     ]);
 
     if (!cliente) throw new Error('Cliente no encontrado');
@@ -158,28 +174,26 @@ exports.crearCotizacion = async (req, res) => {
           
           return {
             ...detalle,
+            utilidad_esperada: detalle.utilidad_esperada || 0,
             precio_venta: detalle.horas * detalle.tarifa_hora
           };
         } else {
           // Validar producto/servicio
           if (!detalle.producto_id) throw new Error('Producto/Servicio no especificado');
           
-          const producto = await Catalogo.findById(detalle.producto_id).session(session);
+          const producto = useTransactions
+            ? await Catalogo.findById(detalle.producto_id).session(session)
+            : await Catalogo.findById(detalle.producto_id);
           if (!producto) throw new Error('Producto/Servicio no encontrado');
           
           return {
             ...detalle,
-            precio_venta: (producto.precio || 0) * detalle.cantidad,
+            utilidad_esperada: detalle.utilidad_esperada || 0,
             costo_materiales: producto.costo || 0
           };
         }
       })
     );
-
-    // Calcular totales
-    const subtotal = detallesProcesados.reduce((sum, item) => sum + (item.precio_venta || 0), 0);
-    const iva = subtotal * ((porcentajes?.iva || 0) / 100);
-    const total = subtotal + iva;
 
     // Crear cotización
     const cotizacion = new Cotizacion({
@@ -190,9 +204,6 @@ exports.crearCotizacion = async (req, res) => {
         financiamiento: configFinanciera.TASA_FINANCIAMIENTO * 100,
         agregado: 0
       },
-      subtotal,
-      iva,
-      precio_venta: total,
       forma_pago,
       creado_por: usuarioCreador._id,
       estado: datosCotizacion.estado || 'Borrador',
@@ -200,7 +211,11 @@ exports.crearCotizacion = async (req, res) => {
     });
 
     // Guardar cotización
-    await cotizacion.save({ session });
+    if (useTransactions) {
+      await cotizacion.save({ session });
+    } else {
+      await cotizacion.save();
+    }
 
     // Manejar pagos según tipo
     if (forma_pago === 'Contado') {
@@ -213,13 +228,23 @@ exports.crearCotizacion = async (req, res) => {
         fecha_pago: new Date()
       });
 
-      await pago.save({ session });
+      if (useTransactions) {
+        await pago.save({ session });
+      } else {
+        await pago.save();
+      }
       cotizacion.pago_contado_id = pago._id;
-      await cotizacion.save({ session });
+      if (useTransactions) {
+        await cotizacion.save({ session });
+      } else {
+        await cotizacion.save();
+      }
     }
 
     // Confirmar transacción
-    await session.commitTransaction();
+    if (useTransactions) {
+      await session.commitTransaction();
+    }
 
     // Retornar respuesta exitosa
     res.status(201).json({
@@ -233,7 +258,9 @@ exports.crearCotizacion = async (req, res) => {
 
   } catch (error) {
     // Manejo de errores
-    await session.abortTransaction();
+    if (useTransactions) {
+      await session.abortTransaction();
+    }
     
     console.error('Error al crear cotización:', {
       message: error.message,
@@ -247,7 +274,9 @@ exports.crearCotizacion = async (req, res) => {
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   } finally {
-    session.endSession();
+    if (useTransactions) {
+      session.endSession();
+    }
   }
 };
 

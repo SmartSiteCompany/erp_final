@@ -155,14 +155,14 @@ const estadoCuentaSchema = new mongoose.Schema({
   // ============ METADATA ============
   creado_por: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'User',
     required: true,
     description: "Usuario que creó el registro"
   },
 
   actualizado_por: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'User',
     description: "Último usuario que actualizó el registro"
   }
 
