@@ -147,8 +147,8 @@ const filterOptions = ["Todos", ...new Set(cotizaciones.map((cotizacion) => coti
                                     </select>
                                     {/* Select dinámico de valores */}
                                     <select className="form-select" value={filterValue} onChange={handleFilterValueChange}>
-                                        {filterOptions.map(option => (
-                                            <option key={option} value={option}>{option}</option>
+                                        {filterOptions.map((option, index) => (
+                                            <option key={`${option}-${index}`} value={option}>{option}</option>
                                         ))}
                                     </select>
                                 </div>

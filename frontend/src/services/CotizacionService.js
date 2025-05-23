@@ -4,16 +4,14 @@ import axios from 'axios';
 const CotizacionService = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const baseURL = 'http://localhost:8000/cotizaciones'; // Nota el /api añadido
+    const baseURL = 'http://localhost:8000/cotizaciones';
 
-    // Función para configurar axios con el token
-    const getConfig = () => {
-        const token = localStorage.getItem('token');
+    // Helper function to get auth headers
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         return {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Content-Type': 'application/json'
         };
     };
 
@@ -21,13 +19,13 @@ const CotizacionService = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(baseURL, {
-                ...getConfig(),
-                params
+            const response = await axios.get(baseURL, { 
+                params,
+                headers: getAuthHeaders()
             });
-            return response.data.data; // Ajuste para la estructura de respuesta
+            return response.data.data;
         } catch (err) {
-            setError(err.response?.data || err.message);
+            setError(err.message);
             throw err;
         } finally {
             setLoading(false);
@@ -38,7 +36,9 @@ const CotizacionService = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`${baseURL}/${id}`, getConfig());
+            const response = await axios.get(`${baseURL}/${id}`, {
+                headers: getAuthHeaders()
+            });
             return response.data.data;
         } catch (err) {
             setError(err.response?.data || err.message);
@@ -50,29 +50,39 @@ const CotizacionService = () => {
 
     const crearCotizacion = async (cotizacionData) => {
         setLoading(true);
-        setError(null);
         try {
-          console.log("Datos a enviar:", cotizacionData); // Agrega esto
-          const response = await axios.post(baseURL, cotizacionData, getConfig());
-          return response.data;
-        } catch (err) {
-          console.error("Error completo:", {
-            message: err.message,
-            response: err.response?.data,
-            status: err.response?.status
-          });
-          setError(err.response?.data || err.message);
-          throw err;
+            // Log token for debugging purposes
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            console.log("Token en servicio:", token ? "Presente" : "No encontrado");
+            
+            if (!token) {
+                throw new Error("No authentication token found. Please log in again.");
+            }
+            
+            const response = await axios.post(baseURL, cotizacionData, {
+                headers: getAuthHeaders()
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error en crearCotizacion:', error);
+            // Enhance error handling
+            if (error.response?.status === 401) {
+                localStorage.removeItem('token'); // Clear invalid token
+                throw new Error("Sesión expirada o inválida. Por favor, inicie sesión nuevamente.");
+            }
+        throw error;
         } finally {
-          setLoading(false);
+            setLoading(false);
         }
-      };
+    };
 
     const actualizarCotizacion = async (id, cotizacionData) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.put(`${baseURL}/${id}`, cotizacionData, getConfig());
+            const response = await axios.put(`${baseURL}/${id}`, cotizacionData, {
+                headers: getAuthHeaders()
+            });
             return response.data;
         } catch (err) {
             setError(err.response?.data || err.message);
@@ -86,7 +96,9 @@ const CotizacionService = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.delete(`${baseURL}/${id}`, getConfig());
+            const response = await axios.delete(`${baseURL}/${id}`, {
+                headers: getAuthHeaders()
+            });
             return response.data;
         } catch (err) {
             setError(err.response?.data || err.message);
@@ -96,12 +108,13 @@ const CotizacionService = () => {
         }
     };
 
-    // Funciones adicionales para operaciones específicas
     const activarServicio = async (id) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post(`${baseURL}/${id}/activar`, {}, getConfig());
+            const response = await axios.post(`${baseURL}/${id}/activar`, {}, {
+                headers: getAuthHeaders()
+            });
             return response.data;
         } catch (err) {
             setError(err.response?.data || err.message);
@@ -115,7 +128,9 @@ const CotizacionService = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post(`${baseURL}/${id}/pagos`, pagoData, getConfig());
+            const response = await axios.post(`${baseURL}/${id}/pagos`, pagoData, {
+                headers: getAuthHeaders()
+            });
             return response.data;
         } catch (err) {
             setError(err.response?.data || err.message);

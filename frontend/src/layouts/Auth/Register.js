@@ -44,15 +44,15 @@ const Register = () => {
             <div className="col-md-8 col-lg-6 col-xl-5">
               <div>
                 <Link to="index" className="mb-5 d-block auth-logo">
-                  <img src="/assets/images/logo-dark.png" alt="" height="22" className="logo logo-dark" />
-                  <img src="/assets/images/logo-light.png" alt="" height="22" className="logo logo-light" />
+                  <img src="/assets/images/logo-dark.png" alt="" height="25" className="logo logo-dark" />
+                  <img src="/assets/images/logo-light.png" alt="" height="25" className="logo logo-light" />
                 </Link>
               </div>
               <div className="card">
                 <div className="card-body p-4">
                   <div className="text-center mt-2">
                     <h5 className="text-primary">Registrar cuenta</h5>
-                    <p className="text-muted">Obtén tu cuenta gratuita de Minible ahora.</p>
+                    <p className="text-muted">Obtén tu cuenta iniciar con Smart Site</p>
                   </div>
                   <div className="p-2 mt-4">
                     {error && <div className="alert alert-danger mb-4">{error}</div>}
@@ -115,7 +115,7 @@ const Register = () => {
                 </div>
               </div>
               <div className="mt-5 text-center">
-                <p>© {new Date().getFullYear()} Minible. Elaborado con <i className="mdi mdi-heart text-danger"></i>por Themesbrand</p>
+                <p>© {new Date().getFullYear()} Smart Site Company</p>
               </div>
             </div>
           </div>

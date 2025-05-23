@@ -7,7 +7,7 @@ import FilialService from "../../services/FilialService";
 
 const CrearUsuario = ({ onUsuarioCreado }) => {
     const navigate = useNavigate();
-    const { crearUsuario } = UserService();
+    const { crearUsuario } = UserService;
     const { obtenerFilials, loading: loadingFiliales, error: errorFiliales } = FilialService();
     
     const [formData, setFormData] = useState({ 
@@ -33,7 +33,7 @@ const CrearUsuario = ({ onUsuarioCreado }) => {
     const [showAlert, setShowAlert] = useState(false);
     const [alertType, setAlertType] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
-
+    
     // Roles disponibles
     const roles = ["usuario", "admin"];
 

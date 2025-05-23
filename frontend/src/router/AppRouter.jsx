@@ -90,41 +90,41 @@
 // import { PrivateRouter } from "./PrivateRouter";
 // import { PublicRouter } from "./PublicRouter";
 
-                    // const AppRoutes = () => {
-                    //     return (
-                    //         <Router>
-                    //             <Routes>
-                    //             {/* Rutas públicas */}
-                    // <Route path="/" element={
-                    //     <PublicRouter>
-                    //       <Login />
-                    //     </PublicRouter>
-                    //   } />
-                    //   <Route path="/Login" element={
-                    //     <PublicRouter>
-                    //       <Login />
-                    //     </PublicRouter>
-                    //   } />
-                    //   <Route path="/Register" element={
-                    //     <PublicRouter>
-                    //       <Register />
-                    //     </PublicRouter>
-                    //   } />
-                    //   <Route path="/ResetPassword" element={
-                    //     <PublicRouter>
-                    //       <ResetPassword />
-                    //     </PublicRouter>
-                    //   } />
-                    //   <Route path="/RecoverPassword" element={
-                    //     <PublicRouter>
-                    //       <RecoverPassword />
-                    //     </PublicRouter>
-                    //   } />
-                    //   <Route path="/PantallaBloqueo" element={
-                    //     <PublicRouter>
-                    //       <PantallaBloqueo />
-                    //     </PublicRouter>
-                    //   } />
+//                     const AppRoutes = () => {
+//                         return (
+//                             <Router>
+//                                 <Routes>
+//                                 {/* Rutas públicas */}
+//                     <Route path="/" element={
+//                         <PublicRouter>
+//                           <Login />
+//                         </PublicRouter>
+//                       } />
+//                       <Route path="/Login" element={
+//                         <PublicRouter>
+//                           <Login />
+//                         </PublicRouter>
+//                       } />
+//                       <Route path="/Register" element={
+//                         <PublicRouter>
+//                           <Register />
+//                         </PublicRouter>
+//                       } />
+//                       <Route path="/ResetPassword" element={
+//                         <PublicRouter>
+//                           <ResetPassword />
+//                         </PublicRouter>
+//                       } />
+//                       <Route path="/RecoverPassword" element={
+//                         <PublicRouter>
+//                           <RecoverPassword />
+//                         </PublicRouter>
+//                       } />
+//                       <Route path="/PantallaBloqueo" element={
+//                         <PublicRouter>
+//                           <PantallaBloqueo />
+//                         </PublicRouter>
+//                       } />
 
 //                 <Route path="/*" element={
 //                     <PrivateRouter>

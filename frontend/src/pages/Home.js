@@ -42,11 +42,11 @@ const Home = () => {
 </div>
 
 <div className="row ">
-    <div className="col-lg-5">
+    <div className="col-lg-6">
     <Grafica3/>
 
     </div>
-    <div className="col-lg-5">
+    <div className="col-lg-4">
       <CardUsuario/>
     </div>
 

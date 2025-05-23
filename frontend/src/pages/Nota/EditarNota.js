@@ -12,7 +12,8 @@ const EditarNota = () => {
 
   const { obtenerNotaPorId, actualizarNota } = NotaService();
   const { obtenerClientes } = ClienteService();
-  const { obtenerUsuarios } = UserService();
+  const { obtenerUsuarios } = UserService;
+
 
   const [formData, setFormData] = useState({
     titulo: "",

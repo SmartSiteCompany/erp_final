@@ -21,12 +21,15 @@ const ListaPagos = () => {
         handleSearchChange, handleFilterTypeChange, handleFilterValueChange
     } = useSearchFilter("metodo_pago"); // Filtro inicial por método de pago
 
-    const filteredPagos = pagos.filter((pago) => {
-        const referencia = pago.referencia || '';
-        const clienteNombre = pago.cliente?.nombre || '';
-        const tipoPago = pago.tipo_pago || '';
-        const metodoPago = pago.metodo_pago || '';
-        const id = pago._id || '';
+    // Protección para asegurar que pagos sea siempre un array
+    const safePagos = Array.isArray(pagos) ? pagos : [];
+
+    const filteredPagos = safePagos.filter((pago) => {
+        const referencia = pago?.referencia || '';
+        const clienteNombre = pago?.cliente?.nombre || '';
+        const tipoPago = pago?.tipo_pago || '';
+        const metodoPago = pago?.metodo_pago || '';
+        const id = pago?._id || '';
         
         const matchesSearch =
             referencia.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,9 +43,9 @@ const ListaPagos = () => {
     });
     
     const filterOptions = {
-        metodo_pago: ["Todos", ...new Set(pagos.map((pago) => pago.metodo_pago))],
-        tipo_pago: ["Todos", ...new Set(pagos.map((pago) => pago.tipo_pago))],
-        estado: ["Todos", ...new Set(pagos.map((pago) => pago.estado))]
+        metodo_pago: ["Todos", ...new Set(safePagos.map((pago) => pago?.metodo_pago).filter(Boolean))],
+        tipo_pago: ["Todos", ...new Set(safePagos.map((pago) => pago?.tipo_pago).filter(Boolean))],
+        estado: ["Todos", ...new Set(safePagos.map((pago) => pago?.estado).filter(Boolean))]
     };
 
     // Hook para rango de fechas
@@ -56,12 +59,15 @@ const ListaPagos = () => {
 
     // Filtrado por fecha
     const filterByDateRange = (pagos, fechaInicio, fechaFin) => {
+        if (!Array.isArray(pagos)) return [];
+        
         if (!fechaInicio && !fechaFin) return pagos;
         
         const startDate = new Date(fechaInicio);
         const endDate = new Date(fechaFin || fechaInicio);
         
         return pagos.filter(pago => {
+            if (!pago?.fecha_pago) return false;
             const pagoDate = new Date(pago.fecha_pago);
             return (!fechaInicio || pagoDate >= startDate) && 
                    (!fechaFin || pagoDate <= endDate);
@@ -82,9 +88,10 @@ const ListaPagos = () => {
         const fetchPagos = async () => {
             try {
                 const fetchedPagos = await obtenerPagos();
-                setPagos(fetchedPagos);
+                setPagos(Array.isArray(fetchedPagos) ? fetchedPagos : []);
             } catch (err) {
                 console.error("Error al obtener pagos:", err);
+                setPagos([]);
             }
         };
         fetchPagos();
@@ -94,7 +101,7 @@ const ListaPagos = () => {
     const handleDelete = async (id) => {
         try {
             await eliminarPago(id);
-            setPagos(pagos.filter(pago => pago._id !== id));
+            setPagos(prevPagos => Array.isArray(prevPagos) ? prevPagos.filter(pago => pago?._id !== id) : []);
             setAlert({ type: "warning", action: "delete", entity: "pago" });
             setTimeout(() => setAlert(null), 5000);
         } catch (err) {
@@ -112,7 +119,7 @@ const ListaPagos = () => {
     };
 
     const handleView = (id) => {
-        const pago = pagos.find((p) => p._id === id);
+        const pago = safePagos.find((p) => p?._id === id);
         if (pago) {
             navigate(`/pagos/ver/${id}`);
         } else {
@@ -124,7 +131,7 @@ const ListaPagos = () => {
         return new Intl.NumberFormat('es-MX', {
             style: 'currency',
             currency: 'MXN'
-        }).format(amount);
+        }).format(amount || 0);
     };
 
     return (
@@ -251,27 +258,27 @@ const ListaPagos = () => {
                                 </thead>
                                 <tbody>
                                     {currentPagos.map((pago) => (
-                                        <tr key={pago._id}>
-                                            <td>{pago.referencia}</td>
-                                            <td>{new Date(pago.fecha_pago).toLocaleDateString()}</td>
-                                            <td>{pago.cliente?.nombre || 'N/A'}</td>
-                                            <td className="text-end">{formatCurrency(pago.monto_pago)}</td>
-                                            <td>{pago.metodo_pago}</td>
-                                            <td>{pago.tipo_pago}</td>
+                                        <tr key={pago?._id}>
+                                            <td>{pago?.referencia || 'N/A'}</td>
+                                            <td>{pago?.fecha_pago ? new Date(pago.fecha_pago).toLocaleDateString() : 'N/A'}</td>
+                                            <td>{pago?.cliente?.nombre || 'N/A'}</td>
+                                            <td className="text-end">{formatCurrency(pago?.monto_pago)}</td>
+                                            <td>{pago?.metodo_pago || 'N/A'}</td>
+                                            <td>{pago?.tipo_pago || 'N/A'}</td>
                                             <td>
-                                                <span className={`badge bg-${pago.estado === 'Completado' ? 'success' : 
-                                                                pago.estado === 'Pendiente' ? 'warning' : 
-                                                                pago.estado === 'Cancelado' ? 'danger' : 'secondary'}`}>
-                                                    {pago.estado}
+                                                <span className={`badge bg-${pago?.estado === 'Completado' ? 'success' : 
+                                                                pago?.estado === 'Pendiente' ? 'warning' : 
+                                                                pago?.estado === 'Cancelado' ? 'danger' : 'secondary'}`}>
+                                                    {pago?.estado || 'N/A'}
                                                 </span>
                                             </td>
                                             <td>
                                                 <BotonesAccion
-                                                    id={pago._id}
+                                                    id={pago?._id}
                                                     entidad="pago"
                                                     onDelete={handleDelete}
                                                     setAlert={setAlert}
-                                                    onView={() => handleView(pago._id)}
+                                                    onView={() => handleView(pago?._id)}
                                                 />
                                             </td>
                                         </tr>

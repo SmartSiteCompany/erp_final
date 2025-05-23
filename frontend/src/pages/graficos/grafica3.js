@@ -266,7 +266,7 @@ const Grafica3 = () => {
                 <div className="col-lg-5 p-1">
                   <div className="stats-card p-2 bg-light rounded-3 mb-1 mb-lg-0">
                     <div className="d-flex align-items-center mb-3">
-                      <div className="icon-shape bg-primary-soft rounded-3 p-2 me-3">
+                      <div className="icon-shape bg-primary-soft rounded-3 p-2 me-1">
                         <i className="uil uil-chart-pie-alt text-primary fs-2"/>
                       </div>
                       <div>
@@ -278,17 +278,17 @@ const Grafica3 = () => {
                     <div className="border-top pt-3">
                       <div className="d-flex justify-content-between mb-2">
                         <span className="text-muted">Completadas</span>
-                        <span className="fw-semibold text-success">
+                        <span className="fw-semibold text-success me-1">
                           {stats.completed} {/*({stats.completionRate}%)*/}
                         </span>
                       </div>
                       <div className="d-flex justify-content-between mb-2">
                         <span className="text-muted">Pendientes</span>
-                        <span className="fw-semibold text-warning">{stats.pending}</span>
+                        <span className="fw-semibold text-warning me-1">{stats.pending}</span>
                       </div>
                       <div className="d-flex justify-content-between mb-2">
                         <span className="text-muted">Canceladas</span>
-                        <span className="fw-semibold text-danger">{stats.cancelled}</span>
+                        <span className="fw-semibold text-danger me-1">{stats.cancelled}</span>
                       </div>
                       
                     </div>

@@ -5,6 +5,7 @@ import AlertComponent from "../../components/AlertasComponent";
 import InteraccionService from "../../services/InteraccionService";
 import ClienteService from "../../services/ClienteService";
 import SelectGroup from "../../components/SelectGroup";
+import UserService from "../../services/UserService";
 
 // Opciones predefinidas para los selects
 const TIPO_INTERACCION_OPTIONS = [
@@ -24,6 +25,7 @@ const CrearInteraccion = ({ onInteraccionCreada }) => {
   const navigate = useNavigate();
   const { crearInteraccion } = InteraccionService();
   const { obtenerClientes } = ClienteService();
+  const obtenerUsuarios = UserService.obtenerUsuarios;
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -37,6 +39,7 @@ const CrearInteraccion = ({ onInteraccionCreada }) => {
   });
 
   const [clientes, setClientes] = useState([]);
+   const [usuarios, setUsuarios] = useState([]);
   const [showAlert, setShowAlert] = useState(false);
   const [alertType, setAlertType] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
@@ -47,8 +50,12 @@ const CrearInteraccion = ({ onInteraccionCreada }) => {
     const fetchClientes = async () => {
       try {
         setIsLoading(true);
+        // Obtener clientes
         const fetchedClientes = await obtenerClientes();
         setClientes(fetchedClientes);
+        // Obtener usuarios
+        const fetchedUsuarios = await obtenerUsuarios();
+        setUsuarios(fetchedUsuarios);
       } catch (err) {
         console.error("Error al obtener clientes:", err);
         setAlertType("error");
@@ -60,13 +67,13 @@ const CrearInteraccion = ({ onInteraccionCreada }) => {
     };
     
     fetchClientes();
-  }, [obtenerClientes]);
+  }, [obtenerClientes, obtenerUsuarios]);
 
-  const clientesOptions = clientes.map(cliente => ({
-    value: cliente._id,
-    label: cliente.nombre,
-    grupo: cliente.tipo_cliente
-  }))
+ const clientesOptions = clientes.map(cliente => ({
+  value: cliente._id,
+  label: cliente.nombre, 
+  grupo: cliente.tipo_cliente
+}));
 
   // Manejar cambios en los inputs
   const handleChange = (e) => {
@@ -200,19 +207,26 @@ const CrearInteraccion = ({ onInteraccionCreada }) => {
                 </div>
 
                 <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="responsable" className="form-label">Responsable</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="responsable"
-                      name="responsable"
-                      value={formData.responsable}
-                      onChange={handleChange}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
+              {/* En el formulario, reemplazar el input por select */}
+<div className="col-md-6 mb-3">
+  <label htmlFor="responsable" className="form-label">Responsable</label>
+  <select
+    className="form-select"
+    id="responsable"
+    name="responsable"
+    value={formData.responsable}
+    onChange={handleChange}
+    required
+    disabled={isLoading}
+  >
+    <option value="">Seleccionar responsable</option>
+    {usuarios.map(usuario => (
+      <option key={usuario._id} value={usuario._id}>
+        {usuario.name} {usuario.apellidos}
+      </option>
+    ))}
+  </select>
+</div>
 
                   <div className="col-md-6 mb-3">
                     <label htmlFor="estado" className="form-label">Estado</label>

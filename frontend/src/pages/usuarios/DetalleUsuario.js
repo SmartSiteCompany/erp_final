@@ -7,7 +7,7 @@ import FilialService from "../../services/FilialService";
 
 const DetalleUsuario = ({ entidad }) => {
   const { id } = useParams();
-  const { error: userError, obtenerUsuarioPorId } = UserService();
+  const { error: userError, obtenerUsuarioPorId } = UserService;
   const { error: filialError, obtenerFilials } = FilialService();
   
   const [user, setUser] = useState(null);

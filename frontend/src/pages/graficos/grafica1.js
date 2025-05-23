@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Row, Col } from 'react-bootstrap';
+import { Card, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { Chart } from 'chart.js/auto';
 import TareaService from '../../services/TareaService';
 
@@ -8,58 +8,82 @@ const Grafica1 = () => {
     total: 0,
     completadas: 0,
     pendientes: 0,
+    enProgreso: 0,
     porcentaje: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const chartRefs = useRef({});
+  const { obtenerTareas } = TareaService();
+  const [tareas, setTareas] = useState([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const tareas = await TareaService().obtenerTareas();
-        const total = tareas.length;
-        const completadas = tareas.filter(t => t.estado === 'completada').length;
-        const pendientes = tareas.filter(t => t.estado === 'pendiente').length;
-        
-        setStats({
-          total,
-          completadas,
-          pendientes,
-          porcentaje: total > 0 ? Math.round((completadas / total) * 100) : 0
-        });
-
-        initMiniCharts();
-      } catch (error) {
-        console.error("Error cargando tareas:", error);
-      }
+  // Función para calcular estadísticas
+  const calcularEstadisticas = (tareas) => {
+    const total = tareas.length;
+    const completadas = tareas.filter(t => t.estado === 'completada').length;
+    const pendientes = tareas.filter(t => t.estado === 'pendiente').length;
+    const enProgreso = tareas.filter(t => t.estado === 'en progreso').length;
+    
+    return {
+      total,
+      completadas,
+      pendientes,
+      enProgreso,
+      porcentaje: total > 0 ? Math.round((completadas / total) * 100) : 0
     };
+  };
 
-    fetchData();
-
-    return () => {
-      // Limpiar gráficos al desmontar
-      Object.values(chartRefs.current).forEach(chart => chart && chart.destroy());
-    };
-  }, []);
-
-  const initMiniCharts = () => {
+  // Función para crear gráficas pequeñas
+  const crearMiniGraficas = () => {
     const charts = [
-      { id: 'total-tareas-chart', color: '--bs-primary' },
-      { id: 'pendientes-chart', color: '--bs-success' },
-      { id: 'completadas-chart', color: '--bs-primary' },
-      { id: 'crecimiento-chart', color: '--bs-warning' }
+      { 
+        id: 'total-tareas-chart', 
+        color: '#5F2DEE', // --bs-primary
+        value: stats.total,
+        label: 'Total'
+      },
+      { 
+        id: 'completadas-chart', 
+        color: '#0acf97', // --bs-success
+        value: stats.completadas,
+        label: 'Completadas'
+      },
+      { 
+        id: 'pendientes-chart', 
+        color: '#f9bc0b', // --bs-primary
+        value: stats.pendientes,
+        label: 'Pendientes'
+      },
+      { 
+        id: 'progreso-chart', 
+        color: '#727cf5', // --bs-warning
+        value: stats.enProgreso,
+        label: 'En Progreso'
+      }
     ];
 
     charts.forEach(chart => {
+      // Destruir gráfica existente si hay una
+      if (chartRefs.current[chart.id]) {
+        chartRefs.current[chart.id].destroy();
+      }
+
       const ctx = document.getElementById(chart.id);
       if (!ctx) return;
+
+      // Datos semanales simulados
+      const weeklyData = Array(7).fill(0).map((_, i) => {
+        const base = chart.value || 1;
+        return Math.max(1, Math.round(base * (0.5 + Math.random() * 0.5 * (i + 1))));
+      });
 
       chartRefs.current[chart.id] = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+          labels: ['', '', '', '', '', '', ''],
           datasets: [{
-            data: [12, 15, 10, 18, 14, 8, 16],
-            borderColor: `var(${chart.color})`,
+            data: weeklyData,
+            borderColor: chart.color,
             borderWidth: 2,
             tension: 0.4,
             fill: false,
@@ -69,21 +93,83 @@ const Grafica1 = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { display: false }, y: { display: false } }
+          plugins: { 
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: { 
+            x: { display: false },
+            y: { display: false }
+          },
+          elements: {
+            line: {
+              borderWidth: 2
+            }
+          }
         }
       });
     });
   };
 
+  // Efecto principal para cargar tareas
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await obtenerTareas();
+        setTareas(data);
+        
+        const nuevasStats = calcularEstadisticas(data);
+        setStats(nuevasStats);
+        
+        // Pequeño retraso para asegurar que el DOM esté listo
+        setTimeout(() => {
+          crearMiniGraficas();
+        }, 100);
+      } catch (err) {
+        console.error("Error cargando tareas:", err);
+        setError(err.message || "Error al cargar tareas");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Limpieza al desmontar
+    return () => {
+      Object.values(chartRefs.current).forEach(chart => chart && chart.destroy());
+    };
+  }, [obtenerTareas]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-4">
+        <Spinner animation="border" variant="primary" />
+        <p>Cargando estadísticas...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="danger">
+        Error al cargar las tareas: {error}
+      </Alert>
+    );
+  }
+
   return (
     <Row>
       {/* Card 1: Total Tareas */}
-      <Col md={6} xl={3}>
+      <div className="col-md-6 col-xl-3">
         <Card>
           <Card.Body>
             <div className="float-end mt-2">
-              <div id="total-tareas-chart" style={{ height: '40px', width: '70px' }}></div>
+              <div style={{ height: '60px', width: '80px' }}>
+                <canvas id="total-tareas-chart"></canvas>
+              </div>
             </div>
             <div>
               <h4 className="mb-1 mt-1">{stats.total}</h4>
@@ -97,35 +183,16 @@ const Grafica1 = () => {
             </p>
           </Card.Body>
         </Card>
-      </Col>
+      </div>
 
-      {/* Card 2: Tareas Pendientes */}
-      <Col md={6} xl={3}>
+      {/* Card 2: Tareas Completadas */}
+      <div className="col-md-6 col-xl-3">
         <Card>
           <Card.Body>
             <div className="float-end mt-2">
-              <div id="pendientes-chart" style={{ height: '40px', width: '70px' }}></div>
-            </div>
-            <div>
-              <h4 className="mb-1 mt-1">{stats.pendientes}</h4>
-              <p className="text-muted mb-0">Pendientes</p>
-            </div>
-            <p className="text-muted mt-3 mb-0">
-              <span className="text-danger me-1">
-                <i className="mdi mdi-arrow-down-bold me-1"></i>
-                {stats.total > 0 ? Math.round((stats.pendientes / stats.total) * 100) : 0}%
-              </span> del total
-            </p>
-          </Card.Body>
-        </Card>
-      </Col>
-
-      {/* Card 3: Tareas Completadas */}
-      <Col md={6} xl={3}>
-        <Card>
-          <Card.Body>
-            <div className="float-end mt-2">
-              <div id="completadas-chart" style={{ height: '40px', width: '70px' }}></div>
+              <div style={{ height: '60px', width: '80px' }}>
+                <canvas id="completadas-chart"></canvas>
+              </div>
             </div>
             <div>
               <h4 className="mb-1 mt-1">{stats.completadas}</h4>
@@ -133,34 +200,59 @@ const Grafica1 = () => {
             </div>
             <p className="text-muted mt-3 mb-0">
               <span className="text-success me-1">
-                <i className="mdi mdi-arrow-up-bold me-1"></i>
+                <i className="mdi mdi-check-circle me-1"></i>
                 {stats.porcentaje}%
               </span> del total
             </p>
           </Card.Body>
         </Card>
-      </Col>
+      </div>
 
-      {/* Card 4: Crecimiento */}
-      <Col md={6} xl={3}>
+      {/* Card 3: Tareas Pendientes */}
+      <div className="col-md-6 col-xl-3">
         <Card>
           <Card.Body>
             <div className="float-end mt-2">
-              <div id="crecimiento-chart" style={{ height: '40px', width: '70px' }}></div>
+              <div style={{ height: '60px', width: '80px' }}>
+                <canvas id="pendientes-chart"></canvas>
+              </div>
             </div>
             <div>
-              <h4 className="mb-1 mt-1">+ <span>{stats.porcentaje}</span>%</h4>
-              <p className="text-muted mb-0">Eficiencia</p>
+              <h4 className="mb-1 mt-1">{stats.pendientes}</h4>
+              <p className="text-muted mb-0">Pendientes</p>
             </div>
             <p className="text-muted mt-3 mb-0">
-              <span className="text-success me-1">
-                <i className="mdi mdi-arrow-up-bold me-1"></i>
-                5.2%
-              </span> desde ayer
+              <span className="text-warning me-1">
+                <i className="mdi mdi-alert-circle me-1"></i>
+                {stats.total > 0 ? Math.round((stats.pendientes / stats.total) * 100) : 0}%
+              </span> del total
             </p>
           </Card.Body>
         </Card>
-      </Col>
+      </div>
+
+      {/* Card 4: En Progreso */}
+      <div className="col-md-6 col-xl-3">
+        <Card>
+          <Card.Body>
+            <div className="float-end mt-2">
+              <div style={{ height: '60px', width: '80px' }}>
+                <canvas id="progreso-chart"></canvas>
+              </div>
+            </div>
+            <div>
+              <h4 className="mb-1 mt-1">{stats.enProgreso}</h4>
+              <p className="text-muted mb-0">En Progreso</p>
+            </div>
+            <p className="text-muted mt-3 mb-0">
+              <span className="text-info me-1">
+                <i className="mdi mdi-progress-clock me-1"></i>
+                {stats.total > 0 ? Math.round((stats.enProgreso / stats.total) * 100) : 0}%
+              </span> del total
+            </p>
+          </Card.Body>
+        </Card>
+      </div>
     </Row>
   );
 };

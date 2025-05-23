@@ -1,34 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import UserService from "../services/UserService";
-
+import { useAuth } from "../context/AuthContext";
 
 const TopBar = ({ toggleSidebar, toggleRightSidebar }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showAppsDropdown, setShowAppsDropdown] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const userService = UserService();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      try {
-        const fetchedUsers = await userService.obtenerUsuarios();
-        if (fetchedUsers.length > 0) {
-          setUser(fetchedUsers[0]); 
-        }
-      } catch (err) {
-        setError(err.message || "Error al cargar el usuario en TopBar");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [userService]);
+  const { user, logout, lockScreen } = useAuth(); // Asegúrate de desestructurar logout
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -42,6 +20,28 @@ const TopBar = ({ toggleSidebar, toggleRightSidebar }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showUserDropdown]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Redirigir después de logout exitoso
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error durante logout:', error);
+      // Redirigir incluso si hay error
+      window.location.href = '/login';
+    }
+  };
+
+  const handleLockScreen = async () => {
+    try {
+      await lockScreen();
+      // Redirigir a pantalla de bloqueo
+      window.location.href = '/PantallaBloqueo';
+    } catch (error) {
+      console.error('Error al bloquear pantalla:', error);
+    }
+  };
 
   return (
     <header id="page-topbar">
@@ -129,46 +129,46 @@ const TopBar = ({ toggleSidebar, toggleRightSidebar }) => {
           </div>
 
           {/* Dropdown de apps */}
-<div className="dropdown d-inline-block ms-1">  {/* Eliminamos d-none d-lg-inline-block */}
-  <button
-    type="button"
-    className="btn header-item noti-icon waves-effect"
-    onClick={() => setShowAppsDropdown(!showAppsDropdown)}
-    aria-expanded={showAppsDropdown}
-    aria-label="Aplicaciones"
-  >
-    <i className="uil-apps"></i>
-  </button>
-  <div 
-    className={`dropdown-menu dropdown-menu-lg dropdown-menu-end ${showAppsDropdown ? 'show' : ''}`}
-    style={{ minWidth: '200px' }}  /* Añadimos un ancho mínimo */
-  >
-    <div className="px-sm-2">
-      <div className="row g-0">
-        <div className="col-6">  {/* Cambiamos col a col-6 para mejor visualización en móviles */}
-          <Link 
-            to="/Calendario" 
-            className="dropdown-icon-item"
-            onClick={() => setShowAppsDropdown(false)}  /* Cerramos el dropdown al seleccionar */
-          >
-            <i className="far fa-calendar-alt"></i>
-            <span>Calendario</span>
-          </Link>
-        </div>
-        <div className="col-6">  {/* Cambiamos col a col-6 */}
-          <Link 
-            to="/Cronograma" 
-            className="dropdown-icon-item"
-            onClick={() => setShowAppsDropdown(false)}
-          >
-            <i className="uil-chart-growth-alt"></i>
-            <span>Cronograma</span>
-          </Link>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+          <div className="dropdown d-inline-block ms-1">
+            <button
+              type="button"
+              className="btn header-item noti-icon waves-effect"
+              onClick={() => setShowAppsDropdown(!showAppsDropdown)}
+              aria-expanded={showAppsDropdown}
+              aria-label="Aplicaciones"
+            >
+              <i className="uil-apps"></i>
+            </button>
+            <div 
+              className={`dropdown-menu dropdown-menu-lg dropdown-menu-end ${showAppsDropdown ? 'show' : ''}`}
+              style={{ minWidth: '200px' }}
+            >
+              <div className="px-sm-2">
+                <div className="row g-0">
+                  <div className="col-6">
+                    <Link 
+                      to="/Calendario" 
+                      className="dropdown-icon-item"
+                      onClick={() => setShowAppsDropdown(false)}
+                    >
+                      <i className="far fa-calendar-alt"></i>
+                      <span>Calendario</span>
+                    </Link>
+                  </div>
+                  <div className="col-6">
+                    <Link 
+                      to="/Cronograma" 
+                      className="dropdown-icon-item"
+                      onClick={() => setShowAppsDropdown(false)}
+                    >
+                      <i className="uil-chart-growth-alt"></i>
+                      <span>Cronograma</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Dropdown de usuario */}
           <div className="dropdown d-inline-block">
@@ -200,14 +200,19 @@ const TopBar = ({ toggleSidebar, toggleRightSidebar }) => {
                 <i className="uil uil-cog font-size-18 align-middle me-1 text-muted"></i>
                 <span className="align-middle">Configuraciones</span>
               </Link>
-              <Link to="#lock" className="dropdown-item" onClick={(e) => e.preventDefault()}>
+              <Link to="/PantallaBloqueo" className="dropdown-item" 
+              onClick={(e) => {
+                 e.preventDefault();
+                  handleLockScreen();
+                  setShowUserDropdown(false);
+                  }}>
                 <i className="uil uil-lock-alt font-size-18 align-middle me-1 text-muted"></i>
                 <span className="align-middle">Bloqueo Pantalla</span>
               </Link>
-              <Link to="/logout" className="dropdown-item">
-                <i className="uil uil-sign-out-alt font-size-18 align-middle me-1 text-muted"></i>
-                <span className="align-middle">Cerrar Sesión</span>
-              </Link>
+              <Link className="dropdown-item" onClick={handleLogout}>
+              <i className="uil uil-sign-out-alt font-size-18 align-middle me-1 text-muted"></i>
+               <span className="align-middle">Cerrar Sesión</span>
+             </Link>
             </div>
           </div>
 

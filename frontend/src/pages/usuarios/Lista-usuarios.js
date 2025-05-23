@@ -14,11 +14,10 @@ const Lista_usuarios = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [filiales, setFiliales] = useState([]);
-    const { loading: userLoading, error: userError, obtenerUsuarios, eliminarUsuario } = UserService();
-    const { loading: filialLoading, error: filialError, obtenerFilials } = FilialService();
+    const [userLoading, setUserLoading] = useState(false);
+    const [userError, setUserError] = useState(null);
 
-    const loading = userLoading || filialLoading;
-    const error = userError || filialError;
+    const { loading: filialLoading, error: filialError, obtenerFilials } = FilialService();
 
     // Manda un hook de busqueda y filtrar
     const {
@@ -29,9 +28,11 @@ const Lista_usuarios = () => {
     // Obtiene filiales y usuarios
     useEffect(() => {
         const fetchData = async () => {
+            setUserLoading(true);
+            setUserError(null);
             try {
                 const [fetchedUsers, fetchedFiliales] = await Promise.all([
-                    obtenerUsuarios(),
+                    UserService.obtenerUsuarios(),
                     obtenerFilials()
                 ]);
                 
@@ -42,10 +43,14 @@ const Lista_usuarios = () => {
                 setFiliales(fetchedFiliales);
             } catch (err) {
                 console.error("Error al obtener datos:", err);
+                setUserError(err);
+            } finally {
+                setUserLoading(false);
             }
         };
         fetchData();
-    }, [obtenerUsuarios, obtenerFilials]);
+    }, []);
+
 
     // Crear mapa de filiales para búsqueda rápida
     const filialMap = {};
@@ -86,20 +91,25 @@ const Lista_usuarios = () => {
     //Obtiene a los usuarios
     useEffect(() => {
         const fetchUsers = async () => {
+            setUserLoading(true);
+            setUserError(null);
             try {
-                const fetchedUsers = await obtenerUsuarios();
+                const fetchedUsers = await UserService.obtenerUsuarios();
                 setUsers(fetchedUsers);
             } catch (err) {
                 console.error("Error al obtener usuarios:", err);
+                setUserError(err);
+            } finally {
+                setUserLoading(false);
             }
         };
         fetchUsers();
-    }, [obtenerUsuarios]); 
+    }, []); 
     
     //Elimina los usuarios
     const handleDelete = async (id) => {
         try {
-            await eliminarUsuario(id);
+            await UserService.eliminarUsuario(id);
             setUsers(users.filter(user => user._id !== id));
             setAlert({ type: "warning", action: "delete", entity: "usuario" });
             setTimeout(() => setAlert(null), 5000);
@@ -128,10 +138,10 @@ const Lista_usuarios = () => {
     };
     return (
         <LoadingError
-          loading={loading}
-          error={error}
+          loading={userLoading || filialLoading}
+          error={userError || filialError}
           loadingMessage="Cargando datos..."
-          errorMessage={error?.message}
+          errorMessage={(userError || filialError)?.message}
         >
         <Layout>
             {/*Manda la alerta como un modal*/}

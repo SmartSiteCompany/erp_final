@@ -158,7 +158,7 @@ const EditarTarea = ({
             <option value="">Sin asignar</option>
             {Array.isArray(usuarios) && usuarios.map((usuario) => (
               <option key={usuario._id} value={usuario._id}>
-                {usuario.name || 'Sin nombre'}
+                {usuario.name || 'Sin nombre'} {usuario.apellidos || 'Sin nombre'}
               </option>
             ))}
           </select>

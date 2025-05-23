@@ -2,37 +2,38 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Modal, ProgressBar, Spinner } from 'react-bootstrap';
 import axios from 'axios';
+import CatalogoService from '../../services/CatalagoService';
 
 const ImportModal = ({ show, onHide, onImportSuccess }) => {
+  // Estados
   const [file, setFile] = useState(null);
   const [importFileName, setImportFileName] = useState('');
   const [importStatus, setImportStatus] = useState('');
   const [importProgress, setImportProgress] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
-  const [cancelImportSource, setCancelImportSource] = useState(null);
-  const baseURL = 'http://localhost:8000';
-  
   const fileInputRef = useRef(null);
+  const cancelTokenRef = useRef(null);
 
+  // Servicio
+  const { cargarCatalogo, loading, error } = CatalogoService();
+  const baseURL = 'http://localhost:8000';
+
+  // Manejador de cambio de archivo
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
 
+    // Validar extensión del archivo
     const validExtensions = ['.xlsx', '.xls', '.csv'];
     const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
     
     if (!validExtensions.includes(`.${fileExtension}`)) {
-      setImportResult({
-        success: false,
-        message: "Tipo de archivo no válido",
-        details: "Solo se aceptan archivos Excel (.xlsx, .xls) o CSV",
-        errorType: 'validation'
-      });
-      setImportStatus('error');
+      showError("Tipo de archivo no válido", "Solo se aceptan archivos Excel (.xlsx, .xls) o CSV", 'validation');
       return;
     }
 
+    // Leer y validar el archivo
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -40,6 +41,7 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         
+        // Validar columnas requeridas
         const requiredColumns = {
           'B1': 'Codigo Smart',
           'C1': 'Descripción',
@@ -52,156 +54,101 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
           .map(([_, expected]) => expected);
         
         if (missingColumns.length > 0) {
-          setImportResult({
-            success: false,
-            message: "El archivo no tiene el formato esperado",
-            details: `Faltan columnas requeridas: ${missingColumns.join(', ')}`,
-            errorType: 'validation'
-          });
-          setImportStatus('error');
+          showError(
+            "El archivo no tiene el formato esperado",
+            `Faltan columnas requeridas: ${missingColumns.join(', ')}`,
+            'validation'
+          );
           return;
         }
         
+        // Archivo válido
         setFile(selectedFile);
         setImportFileName(selectedFile.name);
+        setImportResult(null);
       } catch (error) {
-        setImportResult({
-          success: false,
-          message: "Error al leer el archivo",
-          details: "El archivo podría estar corrupto o no ser un Excel válido",
-          errorType: 'validation'
-        });
-        setImportStatus('error');
+        showError("Error al leer el archivo", "El archivo podría estar corrupto o no ser un Excel válido", 'validation');
       }
     };
+    
     reader.onerror = () => {
-      setImportResult({
-        success: false,
-        message: "Error al leer el archivo",
-        details: "No se pudo leer el contenido del archivo",
-        errorType: 'file'
-      });
-      setImportStatus('error');
+      showError("Error al leer el archivo", "No se pudo leer el contenido del archivo", 'file');
     };
+    
     reader.readAsArrayBuffer(selectedFile);
   };
 
+  // Función para mostrar errores
+  const showError = (message, details, errorType) => {
+    setImportResult({
+      success: false,
+      message,
+      details,
+      errorType
+    });
+    setImportStatus('error');
+  };
+
+  // Iniciar importación
   const startImport = async () => {
     if (!file) return;
   
-    setImportStatus('preparing');
-    setImportProgress(0);
     setIsImporting(true);
-    
-    const formData = new FormData();
-    const CancelToken = axios.CancelToken;
-    const source = CancelToken.source();
-    setCancelImportSource(source);
+    setImportStatus('uploading');
+    setImportProgress(0);
+    setImportResult(null);
   
     try {
-      formData.append('archivo', file, file.name);
-  
-      const response = await axios.post(`${baseURL}/catalogos/cargar-excel`, formData, {
-        cancelToken: source.token,
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || file.size)
-          );
-          setImportProgress(percentCompleted);
-          setImportStatus(percentCompleted < 100 ? 'uploading' : 'processing');
-        },
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        timeout: 300000
+      const result = await cargarCatalogo(file, (progressEvent) => {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / (progressEvent.total || file.size)
+        );
+        setImportProgress(percentCompleted);
       });
   
-      // Manejar respuesta exitosa
-      if (response.status === 207) { // Multi-Status (éxito parcial)
-        setImportResult({
-          success: true,
-          message: "Importación completada con algunos errores",
-          imported: response.data.imported,
-          invalidRows: response.data.invalidRows,
-          errorDetails: response.data.errorDetails,
-          warning: true
-        });
-      } else {
-        setImportResult({
-          success: true,
-          message: response.data.message || "Importación completada con éxito",
-          imported: response.data.imported,
-          total: response.data.total
-        });
-      }
-  
+      setImportResult({
+        success: true,
+        message: result.message || 'Importación completada con éxito',
+        details: `Se importaron ${result.imported || result.count} productos`,
+        imported: result.imported || result.count
+      });
       setImportStatus('done');
+      
       if (onImportSuccess) onImportSuccess();
-  
     } catch (error) {
-      // Manejo de errores mejorado
-      let errorMessage = "Error en la importación";
-      let errorDetails = "";
-      let technicalDetails = null;
-  
+      console.error('Error en importación:', error);
+      
+      let errorMessage = 'Error en la importación';
+      let errorDetails = error.message;
+      
       if (error.response) {
-        // Error estructurado del backend
-        if (error.response.data && error.response.data.error) {
-          errorMessage = error.response.data.error;
-          if (error.response.data.details) {
-            errorDetails = Array.isArray(error.response.data.details) ? 
-              error.response.data.details.join('. ') : 
-              error.response.data.details;
-          }
-        }
-      } else if (error.request) {
-        errorMessage = "No se pudo conectar con el servidor";
-        errorDetails = "Verifique su conexión a internet e intente nuevamente";
-      } else {
-        errorMessage = error.message || errorMessage;
+        errorMessage = error.response.data?.error || errorMessage;
+        errorDetails = error.response.data?.details || 
+                      (Array.isArray(error.response.data?.errors) ? 
+                       error.response.data.errors.join('. ') : 
+                       errorDetails);
       }
   
       setImportResult({
         success: false,
         message: errorMessage,
         details: errorDetails,
-        technicalDetails: technicalDetails,
         errorType: 'server'
       });
       setImportStatus('error');
     } finally {
       setIsImporting(false);
-      setCancelImportSource(null);
     }
   };
 
-  const updateSheetName = async (file) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        const newWorkbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(newWorkbook, worksheet, "Datos");
-        
-        const newData = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
-        resolve(new Blob([newData], { type: file.type }));
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
+  // Cancelar importación
   const handleCancelImport = () => {
-    if (cancelImportSource) {
-      cancelImportSource.cancel("Importación cancelada por el usuario");
+    if (cancelTokenRef.current) {
+      cancelTokenRef.current.cancel("Importación cancelada por el usuario");
     }
-    setIsImporting(false);
-    setImportStatus('cancelled');
   };
 
+  // Cerrar modal
   const handleClose = () => {
     if (!isImporting) {
       onHide();
@@ -209,6 +156,7 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
     }
   };
 
+  // Reiniciar modal
   const resetModal = () => {
     setFile(null);
     setImportFileName('');
@@ -220,6 +168,7 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
     }
   };
   
+  // Descargar plantilla
   const downloadTemplate = async () => {
     try {
       const response = await axios.get(`${baseURL}/catalogos/plantilla`, {
@@ -234,32 +183,15 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
       link.click();
       link.remove();
     } catch (error) {
-      setImportResult({
-        success: false,
-        message: "Error al descargar plantilla",
-        details: "No se pudo descargar el archivo de plantilla",
-        errorType: 'download'
-      });
-      setImportStatus('error');
+      showError(
+        "Error al descargar plantilla",
+        "No se pudo descargar el archivo de plantilla",
+        'download'
+      );
     }
   };
 
-  const downloadErrorDetails = () => {
-    if (!importResult?.errorDetails) return;
-    
-    const blob = new Blob([JSON.stringify(importResult.errorDetails, null, 2)], { 
-      type: 'application/json' 
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'errores-importacion.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
+  // Funciones auxiliares para renderizado
   const getStatusIcon = () => {
     switch (importStatus) {
       case 'done': return <i className="mdi mdi-check-circle-outline display-4 text-success"></i>;
@@ -271,7 +203,6 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
 
   const getStatusTitle = () => {
     switch (importStatus) {
-      case 'preparing': return "Preparando importación";
       case 'uploading': return "Subiendo archivo...";
       case 'processing': return "Procesando datos...";
       case 'done': return "¡Importación exitosa!";
@@ -293,7 +224,8 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
   return (
     <Modal show={show} onHide={handleClose} centered size="lg" backdrop={isImporting ? 'static' : true}>
       <Modal.Header 
-        closeButton className={getModalHeaderClass()}
+        closeButton 
+        className={getModalHeaderClass()}
         closeVariant={['done', 'error'].includes(importStatus) ? 'white' : undefined}
       >
         <Modal.Title>{getStatusTitle()}</Modal.Title>
@@ -327,9 +259,11 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
               <small>{importProgress}%</small>
             </div>
             <ProgressBar 
-              now={importProgress}  variant="primary"
+              now={importProgress} 
+              variant="primary"
               animated={importStatus !== 'done' && importStatus !== 'error'}
-              striped className="progress-lg"
+              striped 
+              className="progress-lg"
             />
           </div>
         )}
@@ -346,28 +280,6 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
               <div className="flex-grow-1">
                 <h5 className="alert-heading">{importResult.message}</h5>
                 {importResult.details && <p className="mb-2">{importResult.details}</p>}
-                
-                {importResult.technicalDetails && (
-                  <div className="mt-3">
-                    <div className="error-list-container" style={{maxHeight: '200px', overflowY: 'auto'}}>
-                      <h6 className="fw-bold">Errores detallados:</h6>
-                      <ul className="list-unstyled">
-                        {importResult.technicalDetails.slice(0, 10).map((detail, index) => (
-                          <li key={index} className="text-danger small">{detail}</li>
-                        ))}
-                      </ul>
-                      {importResult.technicalDetails.length > 10 && (
-                        <div className="small text-muted">
-                          + {importResult.technicalDetails.length - 10} errores más...
-                        </div>
-                      )}
-                    </div>
-                    <button 
-                      className="btn btn-outline-danger btn-sm mt-2" onClick={downloadErrorDetails}>
-                      <i className="mdi mdi-download me-1"></i> Descargar lista completa
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -378,15 +290,19 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
             <label className="btn btn-primary btn-lg">
               <i className="mdi mdi-file-upload me-2"></i> Seleccionar archivo Excel
               <input 
-                ref={fileInputRef} type="file" style={{ display: 'none' }} 
-                accept=".xlsx, .xls, .csv" onChange={handleFileChange}
+                ref={fileInputRef} 
+                type="file" 
+                style={{ display: 'none' }} 
+                accept=".xlsx, .xls, .csv" 
+                onChange={handleFileChange}
               />
             </label>
             <p className="mt-3 text-muted">
               Formatos aceptados: .xlsx, .xls, .csv (Tamaño máximo: 5MB)
             </p>
             <button 
-              className="btn btn-outline-primary mt-2" onClick={downloadTemplate}
+              className="btn btn-outline-primary mt-2" 
+              onClick={downloadTemplate}
             >
               <i className="mdi mdi-download me-1"></i> Descargar plantilla
             </button>
@@ -404,8 +320,10 @@ const ImportModal = ({ show, onHide, onImportSuccess }) => {
               <label className="btn btn-primary me-2 mb-1 mb-md-0">
                 <i className="mdi mdi-file-upload me-1"></i> Reintentar
                 <input 
-                  type="file" style={{ display: 'none' }} 
-                  accept=".xlsx, .xls, .csv"  onChange={handleFileChange}
+                  type="file" 
+                  style={{ display: 'none' }} 
+                  accept=".xlsx, .xls, .csv"  
+                  onChange={handleFileChange}
                 />
               </label>
               <button className="btn btn-outline-primary" onClick={downloadTemplate}>

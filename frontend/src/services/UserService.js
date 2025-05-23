@@ -1,117 +1,87 @@
-import { useState, useCallback,useRef } from 'react';
 import axios from 'axios';
 
-const UserService = () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const baseURL = 'http://localhost:8000/users';
-    const cancelTokenSource = useRef(axios.CancelToken.source()); 
-      // Función genérica para manejar errores
-      const handleError = (err) => {
-        if (!axios.isCancel(err)) {
-            const errorMessage = err.response?.data?.message || err.message;
-            setError(errorMessage);
-        }
-        setLoading(false);
-        throw err;
-    };
+const baseURL = 'http://localhost:8000/users';
+const authBaseURL = 'http://localhost:8000/auth';
 
-    const subirFotoPerfil = useCallback(async (formData) => {
-        setLoading(true);
-        setError(null);
+const UserService = {
+    subirFotoPerfil: async (formData, token) => {
         try {
             const response = await axios.post(`${baseURL}/upload-photo`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                cancelToken: cancelTokenSource.current.token
+                headers: { 
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
+                }
             });
             return response.data;
         } catch (err) {
-            return handleError(err);
-        } finally {
-            setLoading(false);
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
         }
-    }, [baseURL]);
+    },
 
-    const obtenerUsuarios = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    obtenerPerfil: async (token) => {
+        try {
+            const response = await axios.get(`${authBaseURL}/perfil`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return response.data;
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
+        }
+    },
+
+    obtenerUsuarios: async () => {
         try {
             const response = await axios.get(`${baseURL}`);
-            setLoading(false);
             return response.data;
         } catch (err) {
-            setError(err);
-            setLoading(false);
-            throw err;
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
         }
-    }, []); // <- Se ejecuta solo una vez y mantiene la referencia
+    },
 
-    const crearUsuario = async (usuario) => {
-        setLoading(true);
-        setError(null);
+    crearUsuario: async (usuario) => {
         try {
             const response = await axios.post(`${baseURL}`, usuario);
-            setLoading(false);
             return response.data;
         } catch (err) {
-            setError(err);
-            setLoading(false);
-            throw err;
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
         }
-    };
+    },
 
-    const obtenerUsuarioPorId = async (id) => {
-        setLoading(true);
-        setError(null);
+    obtenerUsuarioPorId: async (id) => {
         try {
             const response = await axios.get(`${baseURL}/${id}`);
-            setLoading(false);
             return response.data;
         } catch (err) {
-            setError(err);
-            setLoading(false);
-            throw err;
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
         }
-    };
+    },
 
-    const actualizarUsuario = async (id, usuario) => {
-        setLoading(true);
-        setError(null);
+    actualizarUsuario: async (id, usuario) => {
         try {
             const response = await axios.put(`${baseURL}/${id}`, usuario);
-            setLoading(false);
             return response.data;
         } catch (err) {
-            setError(err);
-            setLoading(false);
-            throw err;
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
         }
-    };
+    },
 
-    const eliminarUsuario = async (id) => {
-        setLoading(true);
-        setError(null);
+    eliminarUsuario: async (id) => {
         try {
             const response = await axios.delete(`${baseURL}/${id}`);
-            setLoading(false);
             return response.data;
         } catch (err) {
-            setError(err);
-            setLoading(false);
-            throw err;
+            const errorMessage = err.response?.data?.message || err.message;
+            throw new Error(errorMessage);
         }
-    };
-
-    return {
-        loading,
-        error,
-        obtenerUsuarios,
-        crearUsuario,
-        obtenerUsuarioPorId,
-        actualizarUsuario,
-        eliminarUsuario,
-        subirFotoPerfil
-    };
+    }
 };
 
 export default UserService;

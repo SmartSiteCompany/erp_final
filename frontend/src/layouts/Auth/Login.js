@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import authService from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -10,42 +11,63 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
- // Verificar token al cargar el componente
- useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const { valid } = await authService.verifyToken();
-        if (valid) navigate('/home');
+
+  // Verificar token al cargar el componente
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+          // Instead of calling login with empty credentials, verify token validity directly
+          // Assuming authService.verifyToken returns { valid: true } or throws error
+          const response = await import("../../services/authService").then(mod => mod.default.verifyToken());
+          if (response && response.valid) {
+            navigate('/home');
+          } else {
+            // Token invalid, do nothing or logout if needed
+          }
+        }
+      } catch (error) {
+        // logout handled elsewhere if invalid
       }
-    } catch (error) {
-      authService.logout();
-    }
-  };
-  
-  checkAuth();
-}, [navigate]);
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-  setMessage("");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
 
-  try {
-    const data = await authService.login(email, password);
-    setMessage("Inicio de sesión exitoso.");
-    
-    // Redirigir después de 1 segundo para mostrar el mensaje
-    setTimeout(() => navigate("/home"), 1000);
-  } catch (error) {
-    setError(error.error || "Credenciales inválidas. Por favor, inténtalo de nuevo.");
-  } finally {
-    setLoading(false);
-  }
-};
- 
+    try {
+      await login(email, password); // Removed third parameter
+      if (rememberMe) {
+        // Store token in localStorage
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+          localStorage.setItem('token', token);
+          sessionStorage.removeItem('token');
+        }
+      } else {
+        // Store token in sessionStorage
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (token) {
+          sessionStorage.setItem('token', token);
+          localStorage.removeItem('token');
+        }
+      }
+      setMessage("Inicio de sesión exitoso.");
+
+      // Redirigir después de 1 segundo para mostrar el mensaje
+      setTimeout(() => navigate("/home"), 1000);
+    } catch (error) {
+      setError(error.error || "Credenciales inválidas. Por favor, inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="d-flex flex-column min-vh-100 authentication-bg">
@@ -55,15 +77,15 @@ const Login = () => {
             <div className="col-md-8 col-lg-5 col-xl-5">
               <div>
                 <Link to="index" className="mb-5 d-block auth-logo">
-                  <img src="/assets/images/logo-dark.png" alt="" height="22" className="logo logo-dark" />
-                  <img src="/assets/images/logo-light.png" alt="" height="22" className="logo logo-light" />
+                  <img src="/assets/images/logo-dark.png" alt="" height="25" className="logo logo-dark" />
+                  <img src="/assets/images/logo-light.png" alt="" height="25" className="logo logo-light" />
                 </Link>
               </div>
               <div className="card">
                 <div className="card-body p-4">
                   <div className="text-center mt-2">
                     <h5 className="text-primary">¡Bienvenido de nuevo!</h5>
-                    <p className="text-muted">Inicie sesión para continuar en Minible.</p>
+                    <p className="text-muted">Inicie sesión para continuar en Smart.</p>
                   </div>
                   <div className="p-2 mt-4">
                     {message && (
@@ -140,7 +162,7 @@ const Login = () => {
                           )}
                         </button>
                       </div>
-                      <div className="mt-4 text-center">
+                      {/*<div className="mt-4 text-center">
                         <div className="signin-other-title">
                           <h5 className="font-size-14 mb-3 title">Iniciar sesión con</h5>
                         </div>
@@ -161,7 +183,7 @@ const Login = () => {
                             </a>
                           </li>
                         </ul>
-                      </div>
+                      </div>*/}
                       <div className="mt-4 text-center">
                         <p className="mb-0">
                           ¿No tienes una cuenta?{" "}
@@ -176,8 +198,7 @@ const Login = () => {
               </div>
               <div className="mt-4 text-center">
                 <p>
-                  © {new Date().getFullYear()} Minible. Elaborado con{" "}
-                  <i className="mdi mdi-heart text-danger"></i> por Themesbrand
+                  © {new Date().getFullYear()} Smart Site Company
                 </p>
               </div>
             </div>

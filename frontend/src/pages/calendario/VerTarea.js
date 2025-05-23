@@ -23,7 +23,7 @@ const VerTarea = ({
   
   // Buscar el usuario asignado
   const usuario = usuarios.find(u => u._id === newEvent.usuario_id);
-  const usuarioNombre = usuario ? usuario.name : "Sin asignar";
+  const usuarioNombre = usuario ? `${usuario.name} ${usuario.apellidos}` : "Sin asignar";
   
 // Calcular duración en días y horas
 const calcularDuracion = () => {
@@ -127,7 +127,7 @@ const formatDate = (dateString) => {
       
       <div className="mb-3">
         <h6 className="text-muted">Asignado a:</h6>
-        <p>{usuarioNombre}</p>
+        <p>{usuarioNombre} </p>
       </div>
       
       <div className="row mt-4">

@@ -11,7 +11,7 @@ const CrearNota = () => {
   const navigate = useNavigate();
   const { crearNota } = NotaService();
   const { obtenerClientes } = ClienteService();
-  const { obtenerUsuarios } = UserService();
+  const { obtenerUsuarios } = UserService;
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -22,6 +22,7 @@ const CrearNota = () => {
     fecha_creacion: new Date().toISOString().split('T')[0]
   });
 
+  
   const [clientes, setClientes] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [showAlert, setShowAlert] = useState(false);
@@ -79,10 +80,12 @@ const CrearNota = () => {
     setIsLoading(true);
     
     try {
-      await crearNota({
+      const payload = {
         ...formData,
         fecha_creacion: new Date().toISOString()
-      });
+      };
+      console.log("Payload to create note:", payload);
+      await crearNota(payload);
       
       setAlertType("success");
       setAlertMessage("Nota creada exitosamente!");

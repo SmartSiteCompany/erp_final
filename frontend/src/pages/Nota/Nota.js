@@ -12,49 +12,84 @@ import UserService from "../../services/UserService";
 const ListaNotas = () => {
     const [alert, setAlert] = useState(null);
     const [notas, setNotas] = useState([]);
-      const [users, setUsuarios] = useState([]);
     const navigate = useNavigate();
 
     const { loading, error, obtenerNotas, eliminarNota } = NotaService();
 
     // Hook de búsqueda y filtrado
-    const {
+const {
         searchTerm, filterType, filterValue,
         handleSearchChange, handleFilterTypeChange, handleFilterValueChange
     } = useSearchFilter("titulo");
 
    // En la función de filtrado
 const filteredNotas = notas.filter((nota) => {
-    const searchContent = `${nota.titulo} ${nota.contenido} ${nota.cliente_id?.nombre} ${nota.usuario_id?.name} ${nota.usuario_id?.apellidos}`.toLowerCase();
+    const searchContent = `${nota.contenido} ${nota.cliente_id?.nombre} ${nota.usuario ? `${nota.usuario.name} ${nota.usuario.apellidos}` : ''}`.toLowerCase();
     const matchesSearch = searchContent.includes(searchTerm.toLowerCase());
-    const matchesFilter = filterValue === "Todos" || nota[filterType] === filterValue;
+
+    let matchesFilter = true;
+    if (filterValue !== "Todos") {
+        if (filterType === 'cliente_id') {
+            matchesFilter = nota.cliente_id?._id === filterValue;
+        } else if (filterType === 'usuario_id') {
+            matchesFilter = nota.usuario?._id === filterValue;
+        } else {
+            matchesFilter = nota[filterType] === filterValue;
+        }
+    }
     return matchesSearch && matchesFilter;
   });
-  
+
+    // Use pagination hook with filteredNotas
+    const {
+        current: currentNotas,
+        currentPage,
+        totalPages,
+        setPreviousPage,
+        setNextPage
+    } = usePagination(filteredNotas, 10);
 
     // Opciones de filtro dinámicas (ajusta según tus necesidades)
     const filterOptions = {
-        titulo: [], // No tiene sentido filtrar por título directamente como lista
-        'cliente_id.nombre': [], // Filtrar por nombre del cliente
-        // Puedes agregar más opciones de filtro si es necesario
+        cliente_id: [], // Filtrar por cliente (id y nombre)
+        usuario_id: [], // Filtrar por usuario (id y nombre)
     };
 
     // Obtener valores únicos para los filtros dinámicos
     useEffect(() => {
-        if (notas && notas.length > 0) {
-            const clientesUnicos = [...new Set(notas.map(nota => nota.cliente_id?.nombre).filter(Boolean))];
-            filterOptions['cliente_id.nombre'] = clientesUnicos;
-        }
-    }, [notas]);
-
-    // Hook de paginación
-    const { current: currentNotas, currentPage, totalPages, setNextPage, setPreviousPage } = usePagination(filteredNotas, 5);
-
-    useEffect(() => {
         const fetchNotas = async () => {
             try {
                 const fetchedNotas = await obtenerNotas();
-                setNotas(fetchedNotas);
+                const usuariosData = await UserService.obtenerUsuarios();
+                // Map user id to user object
+                const usuariosMap = {};
+                usuariosData.forEach(user => {
+                    usuariosMap[user._id] = user;
+                });
+                // Add usuario field to each nota
+                const notasConUsuario = fetchedNotas.map(nota => ({
+                    ...nota,
+                    usuario: usuariosMap[nota.usuario_id] || null
+                }));
+                setNotas(notasConUsuario);
+
+                // Populate filterOptions for clients and users as {value, label}
+                const clientesUnicos = [];
+                const clientesMap = {};
+                fetchedNotas.forEach(nota => {
+                    if (nota.cliente_id && !clientesMap[nota.cliente_id._id]) {
+                        clientesMap[nota.cliente_id._id] = true;
+                        clientesUnicos.push({ value: nota.cliente_id._id, label: nota.cliente_id.nombre });
+                    }
+                });
+
+                const usuariosUnicos = usuariosData.map(user => ({
+                    value: user._id,
+                    label: `${user.name} ${user.apellidos}`
+                }));
+
+                filterOptions.cliente_id = clientesUnicos;
+                filterOptions.usuario_id = usuariosUnicos;
             } catch (err) {
                 console.error("Error al obtener notas:", err);
             }
@@ -139,10 +174,8 @@ const filteredNotas = notas.filter((nota) => {
                                         <i className="uil-filter fs-6"></i>
                                     </span>
                                     <select className="form-select" value={filterType} onChange={handleFilterTypeChange}>
-                                        <option value="titulo">Título</option>
-                                        <option value="contenido">Contenido</option>
                                         <option value="cliente_id.nombre">Cliente</option>
-                                        {/* Agrega más opciones de filtro si es necesario */}
+                                        <option value="usuario.name">Usuario</option>
                                     </select>
                                     <select className="form-select" value={filterValue} onChange={handleFilterValueChange}>
                                         <option value="Todos">Todos</option>
@@ -176,14 +209,14 @@ const filteredNotas = notas.filter((nota) => {
   </tr>
 </thead>
 <tbody>
-  {currentNotas.map((nota) => (
+{currentNotas.map((nota) => (
     <tr key={nota._id}>
       <td>{nota.titulo}</td>
       <td className="text-truncate" style={{maxWidth: '200px'}} title={nota.contenido}>
         {nota.contenido || "No disponible"}
       </td>
       <td>{nota.cliente_id?.nombre || "Sin cliente"}</td>
-      <td>{nota.usuario ? `${nota.usuario.name} ${nota.usuario.apellidos}` : "Sin usuario"}</td>
+      <td style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>{nota.usuario ? `${nota.usuario.name} ${nota.usuario.apellidos}` : "Sin usuario"}</td>
       <td>{formatFecha(nota.fecha_creacion)}</td>
       <td>
         <BotonesAccion
@@ -197,7 +230,7 @@ const filteredNotas = notas.filter((nota) => {
     </tr>
   ))}
 </tbody>
-                                
+                                 
                             </table>
                         </div>
                     </div>

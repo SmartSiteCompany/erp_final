@@ -86,8 +86,11 @@ import Card2 from "../pages/cards/card2";
 import CardInteraccion from "../pages/cards/CardInteraccion";
 import CardUsuario from "../pages/cards/cardUsuario";
 import CardTarea from "../pages/cards/cardTarea";
+
 import ListaCatalogo from "../pages/catalogo/ListaCatalogo";
 import CrearCatalogo from "../pages/catalogo/CrearCatalogo";
+import DetalleCatalogo from "../pages/catalogo/DetalleCatalogo";
+import EditarCatalogo from "../pages/catalogo/EditarCatalogo";
 
 const AppRoutes = () => {
     return (
@@ -164,9 +167,9 @@ const AppRoutes = () => {
 
             {/*Catalogo */}
             <Route path="/Catalogo" element={<ListaCatalogo/>}/>
-            <Route path="/Catalogo/CrearCatalogo" element={<CrearCatalogo/>}/>
-
-
+            <Route path="/productos/CrearProducto" element={<CrearCatalogo/>}/>
+            <Route path="/producto/editar/:id" element={<EditarCatalogo/>} />
+            <Route path="/producto/ver/:id" element={<DetalleCatalogo />} />
 
             {/*Clientes*/}
             <Route path="/Lista_clientes" element={<ListaClientes />}/>

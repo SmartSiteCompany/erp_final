@@ -10,7 +10,7 @@ const DetalleNota = () => {
   const { id } = useParams();
   const { error, obtenerNotaPorId } = NotaService();
   const { obtenerClientePorId } = ClienteService();
-  const { obtenerUsuarioPorId } = UserService();
+  const { obtenerUsuarioPorId } = UserService;
   const [nota, setNota] = useState(null);
   const [cliente, setCliente] = useState(null);
   const [usuario, setUsuario] = useState(null);
@@ -22,6 +22,7 @@ const DetalleNota = () => {
       setLoading(true);
       try {
         const foundNota = await obtenerNotaPorId(id);
+        console.log("Found Nota:", foundNota);
         
         // Verificar si se obtuvieron los IDs correctamente
         if (!foundNota || !foundNota._id) {
@@ -32,12 +33,14 @@ const DetalleNota = () => {
         // Obtener IDs de relaciones
         const clienteId = foundNota.cliente_id?._id || foundNota.cliente_id;
         const usuarioId = foundNota.usuario_id?._id || foundNota.usuario_id;
+        console.log("Cliente ID:", clienteId, "Usuario ID:", usuarioId);
   
         // Cargar datos relacionados en paralelo
         const [clienteData, usuarioData] = await Promise.all([
           clienteId ? obtenerClientePorId(clienteId) : Promise.resolve(null),
           usuarioId ? obtenerUsuarioPorId(usuarioId) : Promise.resolve(null)
         ]);
+        console.log("Cliente Data:", clienteData, "Usuario Data:", usuarioData);
   
         setCliente(clienteData);
         setUsuario(usuarioData);
@@ -95,18 +98,16 @@ const DetalleNota = () => {
       errorMessage={error?.message}
     >
       <Layout>
-        <div className="row">
-          <div className="col">
-            <div className="card p-4">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                  <h4 className="mb-1">Detalles de la Nota</h4>
-                  <small className="text-muted">ID: #{nota._id}</small>
+          <div className="row">
+        <div className="col">
+          <div className="card p-4">
+              <div className="invoice-title">
+                <h4 className="float-end font-size-16">ID: #{nota._id}</h4>
+                <div className="text-muted">
+                  <h4 className="font-size-h4 mb-1">Detalles de la Nota</h4>
                 </div>
-                <span className="badge bg-info px-3 py-2 rounded">
-                  {formatDateTime(nota.fecha_creacion)}
-                </span>
               </div>
+             <hr className="my-3" />
 
               <div className="row mb-4">
                 <div className="col-md-6">
@@ -132,7 +133,9 @@ const DetalleNota = () => {
                 <div className="col-md-6">
                   <div className="detail-item mb-3">
                     <h6 className="text-muted mb-1">Fecha de Actualización</h6>
-                    <p className="mb-0">{formatDateTime(nota.fecha_actualizacion)}</p>
+                    <p className="mb-0">{formatDateTime(nota.fecha_actualizacion)}
+                      {formatDateTime(nota.fecha_creacion)}
+                    </p>
                   </div>
                   
                   <div className="detail-item mb-3">

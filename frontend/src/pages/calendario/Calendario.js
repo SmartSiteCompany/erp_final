@@ -45,10 +45,10 @@ const Calendario = () => {
   const modalRef = useRef(null);
   const calendarRef = useRef(null);
 
-  const tareaService = useRef(TareaService());
-  const clienteService = useRef(ClienteService());
-  const filialService = useRef(FilialService());
-  const userService = useRef(UserService());
+const tareaService = useRef(TareaService());
+const clienteService = useRef(ClienteService());
+const filialService = useRef(FilialService());
+const userService = useRef(UserService);
 
   // Función para obtener el color según la filial
   const getColorForFilial = useCallback((nombre_filial) => {
@@ -128,7 +128,7 @@ const Calendario = () => {
 
       return {
         id: tarea._id,
-        title: `${tarea.descripcion} (${usuario.name || 'Sin asignar'})`,
+        title: `${tarea.descripcion} (${usuario.name} ${usuario.apellidos || 'Sin asignar'})`,
         start: startStr,
         end: endStr,
         backgroundColor: getColorForFilial(nombreFilial),
@@ -141,7 +141,8 @@ const Calendario = () => {
           filial_id: tarea.filial_id,
           estado: tarea.estado,
           usuario_id: tarea.usuario_id,
-          usuario_nombre: usuario.name || 'Sin asignar'
+          usuario_nombre:`(${usuario.name} ${usuario.apellidos || 'Sin asignar'})`,
+
         }
       };
     });
@@ -296,7 +297,7 @@ const Calendario = () => {
 
       const updatedEvent = {
         id: response._id,
-        title: `${response.descripcion} (${usuario.name || 'Sin asignar'})`,      
+        title: `${response.descripcion} (${usuario.name} ${usuario.apellidos || 'Sin asignar'})`,
         start: response.fecha_creacion,
         end: formattedEndDate,
         backgroundColor: getColorForFilial(nombreFilial),
@@ -310,7 +311,7 @@ const Calendario = () => {
           nombre_filial: nombreFilial,
           estado: response.estado,
           usuario_id: response.usuario_id,
-          usuario_nombre: usuario.name || 'Sin asignar'
+          usuario_nombre:`(${usuario.name} ${usuario.apellidos || 'Sin asignar'})`,
         }
       };
 

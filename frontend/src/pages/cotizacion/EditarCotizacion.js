@@ -17,7 +17,7 @@ const EditarCotizacion = () => {
   const [formData, setFormData] = useState({
     nombre_cotizacion: "",
     fecha_cotizacion: new Date().toISOString().split('T')[0],
-    validoHasta: "",
+    valido_hasta: "",
     estado: "",
     aplicaIva: true, // Nuevo campo para controlar IVA
     cliente_id: "",
@@ -65,7 +65,7 @@ const EditarCotizacion = () => {
           cliente_id: cotizacion.cliente_id?._id || "",
           filial_id: cotizacion.filial_id?._id || "",
           fecha_cotizacion: cotizacion.fecha_cotizacion?.split('T')[0] || new Date().toISOString().split('T')[0],
-          validoHasta: cotizacion.validoHasta?.split('T')[0] || "",
+          valido_hasta: cotizacion.valido_hasta?.split('T')[0] || "",
           fecha_inicio_servicio: cotizacion.fecha_inicio_servicio?.split('T')[0] || "",
           fecha_fin_servicio: cotizacion.fecha_fin_servicio?.split('T')[0] || "",
           pagoContado: {
@@ -120,7 +120,7 @@ const EditarCotizacion = () => {
         ...formData,
         financiamiento: {
           ...formData.financiamiento,
-          [field]: value
+          [field]: value || (field === 'anticipo_solicitado' || field === 'plazo_semanas' ? 0 : "")
         }
       });
     } else if (name.startsWith("pagoContado.")) {
@@ -129,7 +129,7 @@ const EditarCotizacion = () => {
         ...formData,
         pagoContado: {
           ...formData.pagoContado,
-          [field]: value
+          [field]: value || ""
         }
       });
     } else if (index !== undefined) {
@@ -174,7 +174,7 @@ const EditarCotizacion = () => {
         financiamiento
       });
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData({ ...formData, [name]: value || "" });
     }
   };
 
@@ -215,7 +215,26 @@ const EditarCotizacion = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await actualizarCotizacion(id, formData);
+      // Normalize data before sending
+      const dataToSend = {
+        ...formData,
+        valido_hasta: formData.valido_hasta || "",
+        fecha_cotizacion: formData.fecha_cotizacion || new Date().toISOString().split('T')[0],
+        fecha_inicio_servicio: formData.fecha_inicio_servicio || "",
+        fecha_fin_servicio: formData.fecha_fin_servicio || "",
+        financiamiento: {
+          anticipo_solicitado: Number(formData.financiamiento.anticipo_solicitado) || 0,
+          plazo_semanas: Number(formData.financiamiento.plazo_semanas) || 0,
+          pago_semanal: Number(formData.financiamiento.pago_semanal) || 0,
+          saldo_restante: Number(formData.financiamiento.saldo_restante) || 0,
+          fecha_inicio: formData.financiamiento.fecha_inicio || "",
+          fecha_termino: formData.financiamiento.fecha_termino || ""
+        },
+        pagoContado: {
+          fechaPago: formData.pagoContado.fechaPago || ""
+        }
+      };
+      await actualizarCotizacion(id, dataToSend);
       setAlertType("success");
       setAlertMessage("Cotización actualizada exitosamente.");
       setShowAlert(true);

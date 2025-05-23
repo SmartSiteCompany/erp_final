@@ -19,21 +19,34 @@ const register = async (name, apellidos, email, password, area) => { // Agrega '
 };
 
 
+// En tu authService.js (función login)
 const login = async (email, password) => {
   try {
     const response = await axios.post(`${API_URL}/login`, { email, password });
     
     if (response.data.token) {
+      // Guarda el token en localStorage y sessionStorage como respaldo
       localStorage.setItem('token', response.data.token);
+      sessionStorage.setItem('token', response.data.token);
+      
+      // Guarda datos básicos del usuario
       if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        const userData = {
+          id: response.data.user.id,
+          name: response.data.user.name,
+          email: response.data.user.email
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
       }
-      // Configurar axios para enviar el token en futuras peticiones
+      
       setAuthToken(response.data.token);
+      return response.data;
     }
-    
-    return response.data;
+    throw new Error('No se recibió token en la respuesta');
   } catch (error) {
+    // Limpia cualquier token previo en caso de error
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     throw error.response?.data || { error: "Error en el login" };
   }
 };
@@ -55,10 +68,43 @@ const verifyToken = async () => {
   }
 };
 
-const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  delete axios.defaults.headers.common['Authorization'];
+const logout = async () => {
+  try {
+    // 1. Intentar logout en el backend
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.post(`${API_URL}/logout`, {}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+    } catch (serverError) {
+      console.error('Error en logout del servidor:', serverError);
+      // Continuamos aunque falle el logout del servidor
+    }
+
+    // 2. Limpiar frontend
+    localStorage.clear();
+    sessionStorage.clear();
+    delete axios.defaults.headers.common['Authorization'];
+
+    // 3. Limpiar cookies relacionadas con la sesión
+    document.cookie.split(";").forEach(cookie => {
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    });
+
+    return true; // Indicar que el logout fue exitoso
+  } catch (error) {
+    console.error('Error durante logout:', error);
+    // Forzar limpieza incluso si hay error
+    localStorage.clear();
+    sessionStorage.clear();
+    throw error;
+  }
 };
 
 const setAuthToken = (token) => {
@@ -68,6 +114,8 @@ const setAuthToken = (token) => {
     delete axios.defaults.headers.common['Authorization'];
   }
 };
+
+
 
 const authService = {
   register,

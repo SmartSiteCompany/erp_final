@@ -8,7 +8,7 @@ import FilialService from "../../services/FilialService";
 const EditarUsuario = ({ entidad }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { obtenerUsuarioPorId, actualizarUsuario } = UserService();
+  const { obtenerUsuarioPorId, actualizarUsuario } = UserService;
   const { obtenerFilials } = FilialService();
   
   const [user, setUser] = useState({

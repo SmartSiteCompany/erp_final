@@ -31,6 +31,19 @@ const TareaService = () => {
         }
     }, []);
 
+    const obtenerTareasPorUsuario = async (userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axios.get(`${baseURL}?usuarioId=${userId}`);
+            setLoading(false);
+            return handleResponse(response);
+        } catch (err) {
+            setLoading(false);
+            return handleError(err);
+        }
+    };
+
     const crearTarea = async (tarea) => {
         setLoading(true);
         setError(null);
@@ -87,6 +100,7 @@ const TareaService = () => {
         loading,
         error,
         obtenerTareas,
+        obtenerTareasPorUsuario,
         crearTarea,
         obtenerTareaPorId,
         actualizarTarea,

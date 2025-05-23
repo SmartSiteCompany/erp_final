@@ -35,7 +35,7 @@ const Cronograma = () => {
   const tareaService = TareaService();
   const clienteService = ClienteService();
   const filialService = FilialService();
-  const userService = UserService();
+const userService = UserService;
 
   // Función auxiliar para obtener estilos basados en el estado
   const getStatusStyle = (estado) => {

@@ -154,7 +154,7 @@ const CrearTarea = ({
           >
             <option value="">Seleccione un usuario</option>
             {usuarios.map(usuario => (
-              <option key={usuario._id} value={usuario._id}>{usuario.name}</option>
+              <option key={usuario._id} value={usuario._id}>{usuario.name} {usuario.apellidos}</option>
             ))}
           </select>
         </div>

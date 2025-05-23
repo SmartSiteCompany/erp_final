@@ -15,7 +15,8 @@ const ListaCatalogo = () => {
     const [alert, setAlert] = useState(null);
     const navigate = useNavigate();
     const [catalogo, setCatalogo] = useState([]);
-    const {  loading, error, obtenerCatalogo, eliminarProducto, cargarCatalogo, buscarPorCodigo, obtenerPorCategoria } = CatalogoService();
+    const [productos, setProductos] = useState([]);
+    const {  loading, error, obtenerCatalogo, eliminarPorId, cargarCatalogo, buscarPorCodigo, obtenerPorCategoria } = CatalogoService();
     
     // Estado para el modal de importación
     const [showImportModal, setShowImportModal] = useState(false);
@@ -50,7 +51,7 @@ const ListaCatalogo = () => {
     };
 
     // Hook de paginación
-    const { current: currentCatalogo, currentPage, totalPages, setNextPage, setPreviousPage } = usePagination(filteredCatalogo, 10);
+    const { current: currentCatalogo, currentPage, totalPages, setNextPage, setPreviousPage } = usePagination(filteredCatalogo, 25);
 
     // Obtener catálogo
     useEffect(() => {
@@ -65,23 +66,23 @@ const ListaCatalogo = () => {
         fetchCatalogo();
     }, [obtenerCatalogo]);
 
-    // Eliminar producto
+    //Elimina los productos
     const handleDelete = async (id) => {
         try {
-            await eliminarProducto(id);
-            setCatalogo(catalogo.filter(producto => producto._id !== id));
+            await eliminarPorId(id);
+            setProductos(productos.filter(producto => producto._id !== id));
             setAlert({ type: "warning", action: "delete", entity: "producto" });
             setTimeout(() => setAlert(null), 5000);
         } catch (err) {
             console.error("Error al eliminar producto:", err);
         }
     };
-
-    const handleConfirmDelete = (id) => {
+     //confirma la eliminacion
+     const handleConfirmDelete = (id) => {
         handleDelete(id);
         setAlert(null);
     };
-
+    //Manda una alerta
     const handleCancelDelete = () => {
         setAlert(null);
     };
@@ -89,9 +90,9 @@ const ListaCatalogo = () => {
     const handleView = (id) => {
         const producto = catalogo.find((p) => p._id === id);
         if (producto) {
-            navigate(`/catalogo/ver/${id}`);
+            navigate(`/producto/ver/${id}`);
         } else {
-            console.error('Producto no encontrado');
+            console.error('Producto no encontrado aqui');
         }
     };
 
@@ -216,7 +217,7 @@ const ListaCatalogo = () => {
                             {/* Crear producto Button */}
                             <div className="col-md-3 mb-2">
                                 <div className="input-group">
-                                    <Link to="/Catalogo/CrearCatalogo" className="input-daterange input-group btn btn-outline-success waves-effect waves-light">
+                                    <Link to="/productos/CrearProducto" className="input-daterange input-group btn btn-outline-success waves-effect waves-light">
                                         <i className="mdi mdi-plus me-1"></i> Crear Producto
                                     </Link>
                                 </div>

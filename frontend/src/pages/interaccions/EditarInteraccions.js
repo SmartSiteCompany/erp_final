@@ -4,13 +4,15 @@ import Layout from "../../layouts/pages/layout";
 import LoadingError from "../../components/LoadingError";
 import InteraccionService from "../../services/InteraccionService";
 import ClienteService from "../../services/ClienteService";
+import UserService from "../../services/UserService";
 
 const EditarInteraccion = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { obtenerInteraccionPorId, actualizarInteraccion } = InteraccionService();
     const { obtenerClientes } = ClienteService();
-    
+    const { obtenerUsuarios } = UserService; 
+    const [usuarios, setUsuarios] = useState([]);
     const [interaccion, setInteraccion] = useState(null);
     const [clientes, setClientes] = useState([]);
     const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
@@ -21,18 +23,20 @@ const EditarInteraccion = () => {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            try {
-                // Load clients and interaction in parallel
-                const [listaClientes, foundInteraccion] = await Promise.all([
-                    obtenerClientes(),
-                    obtenerInteraccionPorId(id)
-                ]);
+             try {
+            // Cargar clientes, usuarios e interacción en paralelo
+            const [listaClientes, listaUsuarios, foundInteraccion] = await Promise.all([
+                obtenerClientes(),
+                obtenerUsuarios(),
+                obtenerInteraccionPorId(id)
+            ]);
 
                 if (!foundInteraccion) {
                     setNotFound(true);
                     return;
                 }
-
+                
+                setUsuarios(listaUsuarios);
                 setClientes(listaClientes);
                 setInteraccion(foundInteraccion);
 
@@ -193,16 +197,19 @@ const EditarInteraccion = () => {
                                         />
                                     </div>
 
-                                    <div className="mb-3">
-                                        <label className="form-label">Responsable</label>
-                                        <input
-                                            type="text"
-                                            name="responsable"
-                                            value={interaccion.responsable || ""}
-                                            onChange={handleChange}
-                                            className="form-control"
-                                        />
-                                    </div>
+                                   {/* Reemplazar el input de texto por un select */}
+                                  <div className="mb-3">
+                                    <label className="form-label">Responsable</label>
+                                  <select
+                                  name="responsable" value={interaccion.responsable || ""} onChange={handleChange} className="form-select" required>
+                                 <option value="">Seleccionar responsable</option>
+                                 {usuarios.map(usuario => (
+                                 <option key={usuario._id} value={usuario._id}>
+                                 {usuario.name} {usuario.apellidos}
+                                 </option>
+                                    ))}
+                                 </select>
+                                  </div>
 
                                     <div className="text-end">
                                         <button 

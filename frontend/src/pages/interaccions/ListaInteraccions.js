@@ -7,10 +7,14 @@ import BotonesAccion from "../../components/BotonesAccion";
 import AlertComponent from '../../components/AlertasComponent';
 import LoadingError from "../../components/LoadingError";
 import InteraccionService from "../../services/InteraccionService";
+import UserService from "../../services/UserService";
 
 const ListaInteraccions = () => {
     const [alert, setAlert] = useState(null);
     const [interacciones, setInteracciones] = useState([]);
+    const [usersMap, setUsersMap] = useState({});
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [errorUsers, setErrorUsers] = useState(null);
     const navigate = useNavigate();
 
     const { loading, error, obtenerInteracciones, eliminarInteraccion } = InteraccionService();
@@ -21,12 +25,16 @@ const ListaInteraccions = () => {
         handleSearchChange, handleFilterTypeChange, handleFilterValueChange
     } = useSearchFilter("tipo_interaccion");
 
-    const filteredInteracciones = interacciones.filter((interaccion) => {
-        const searchContent = `${interaccion.tipo_interaccion} ${interaccion.descripcion} ${interaccion.responsable}`.toLowerCase();
+const filteredInteracciones = interacciones.filter((interaccion) => {
+        const responsableId = interaccion.responsable;
+        const user = usersMap[responsableId];
+        const responsableName = user ? `${user.name} ${user.apellidos}` : '';
+        const searchContent = `${interaccion.tipo_interaccion} ${interaccion.descripcion} ${responsableName}`.toLowerCase();
         const matchesSearch = searchContent.includes(searchTerm.toLowerCase());
         const matchesFilter = filterValue === "Todos" || interaccion[filterType] === filterValue;
         return matchesSearch && matchesFilter;
     });
+
 
     // Opciones de filtro dinámicas
     const filterOptions = {
@@ -43,6 +51,19 @@ const ListaInteraccions = () => {
             try {
                 const fetchedInteracciones = await obtenerInteracciones();
                 setInteracciones(fetchedInteracciones);
+                setLoadingUsers(true);
+                try {
+                    const users = await UserService.obtenerUsuarios();
+                    const map = {};
+                    users.forEach(user => {
+                        map[user._id] = user;
+                    });
+                    setUsersMap(map);
+                    setLoadingUsers(false);
+                } catch (userErr) {
+                    setErrorUsers(userErr);
+                    setLoadingUsers(false);
+                }
             } catch (err) {
                 console.error("Error al obtener interacciones:", err);
             }
@@ -136,15 +157,8 @@ const ListaInteraccions = () => {
                                     <span className="me-0 p-2 text-white bg-primary rounded-1 d-flex justify-content-center align-items-center">
                                         <i className="uil-filter fs-6"></i>
                                     </span>
-                                    <select className="form-select" value={filterType} onChange={handleFilterTypeChange}>
-                                        <option value="tipo_interaccion">Tipo</option>
-                                        <option value="llamada">Llamada</option>
-                                        <option value="correo">Correo</option>
-                                        <option value="reunion">Reunión</option>
-                                        <option value="visita">visita</option>
-                                    </select>
                                     <select className="form-select" value={filterValue} onChange={handleFilterValueChange}>
-                                        {filterOptions[filterType].map(option => (
+                                        {(filterOptions[filterType] || []).map(option => (
                                             <option key={option} value={option}>{option}</option>
                                         ))}
                                     </select>
@@ -175,7 +189,7 @@ const ListaInteraccions = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {currentInteracciones.map((interaccion) => (
+                                    {(currentInteracciones || []).map((interaccion) => (
                                         <tr key={interaccion._id}>
                                             <td>{interaccion.cliente_id?.nombre}</td>
                                             <td>
@@ -187,7 +201,7 @@ const ListaInteraccions = () => {
                                                 {interaccion.descripcion || "No disponible"}
                                             </td>
                                             <td>{formatFecha(interaccion.fecha)}</td>
-                                            <td>{interaccion.responsable}</td>
+                                            <td>{interaccion.responsable && usersMap[interaccion.responsable] ? `${usersMap[interaccion.responsable].name} ${usersMap[interaccion.responsable].apellidos}` : "No asignado"}</td>
                                             <td>
                                                 <span className={getEstadoStyle(interaccion.estado)}>
                                                     {interaccion.estado}

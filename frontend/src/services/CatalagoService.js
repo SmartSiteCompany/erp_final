@@ -38,11 +38,11 @@ const CatalogoService = () => {
         }
     };
 
-    const buscarPorCodigo = async (codigo) => {
+    const buscarPorId = async (id) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`${baseURL}/codigo/${codigo}`);
+            const response = await axios.get(`${baseURL}/${id}`);
             setLoading(false);
             return response.data;
         } catch (err) {
@@ -66,60 +66,56 @@ const CatalogoService = () => {
         }
     };
 
-    const cargarCatalogo = async (file) => {
+    const cargarCatalogo = async (file, onUploadProgress, cancelToken) => {
         setLoading(true);
         setError(null);
+        
         try {
-            // Validación básica en el frontend
-            if (!file) {
-                throw new Error('No se seleccionó ningún archivo');
-            }
-    
-            // Verificar tipo de archivo
-            const validTypes = [
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-excel',
-                'text/csv'
-            ];
-            
-            if (!validTypes.includes(file.type)) {
-                throw new Error('Tipo de archivo no válido. Solo se aceptan XLSX, XLS o CSV');
-            }
-    
-            // Verificar tamaño (5MB máximo)
-            if (file.size > 5 * 1024 * 1024) {
-                throw new Error('El archivo es demasiado grande. Tamaño máximo: 5MB');
-            }
-    
             const formData = new FormData();
-            formData.append('file', file);
-            
+            formData.append('archivo', file);
+
             const response = await axios.post(`${baseURL}/cargar-excel`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 },
-                timeout: 30000 // 30 segundos de timeout
+                onUploadProgress,
+                cancelToken,
+                timeout: 300000 // 5 minutos timeout
             });
-            
+
             setLoading(false);
             return response.data;
         } catch (err) {
             let errorMessage = 'Error al cargar el catálogo';
+            let errorDetails = '';
             
             if (err.response) {
                 // Error del servidor
-                errorMessage = err.response.data.error || err.response.data.message || errorMessage;
+                if (err.response.data) {
+                    errorMessage = err.response.data.error || 
+                                  err.response.data.message || 
+                                  errorMessage;
+                    errorDetails = err.response.data.details || 
+                                 (Array.isArray(err.response.data.errors) ? 
+                                  err.response.data.errors.join('. ') : 
+                                  'Error en el servidor');
+                }
             } else if (err.request) {
                 // Error de conexión
                 errorMessage = 'No se pudo conectar con el servidor';
+                errorDetails = 'Verifica tu conexión a internet e intenta nuevamente';
             } else {
                 // Error del frontend
-                errorMessage = err.message || errorMessage;
+                errorDetails = err.message;
             }
             
             setError(errorMessage);
             setLoading(false);
-            throw new Error(errorMessage);
+            
+            const errorObj = new Error(errorMessage);
+            errorObj.details = errorDetails;
+            errorObj.response = err.response;
+            throw errorObj;
         }
     };
 
@@ -137,11 +133,11 @@ const CatalogoService = () => {
         }
     };
 
-    const eliminarProducto = async (codigo) => {
+    const eliminarPorId = async (id) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.delete(`${baseURL}/${codigo}`);
+            const response = await axios.delete(`${baseURL}/${id}`);
             setLoading(false);
             return response.data;
         } catch (err) {
@@ -156,11 +152,11 @@ const CatalogoService = () => {
         error,
         obtenerCatalogo,
         crearProducto,
-        buscarPorCodigo,
+        buscarPorId,
         obtenerPorCategoria,
         cargarCatalogo,
         actualizarProducto,
-        eliminarProducto
+        eliminarPorId
     };
 };
 
